@@ -1,9 +1,23 @@
+using System.Security.Authentication;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Configure Kestrel to use TLS 1.2 and TLS 1.3 only, which are compatible with HTTP/2.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureHttpsDefaults(httpsOptions =>
+    {
+        httpsOptions.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+    });
+    options.ListenLocalhost(7113, listenOptions =>
+    {
+        listenOptions.UseHttps();
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+    });
+});
 
+// Add services to the container.
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -17,9 +31,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
