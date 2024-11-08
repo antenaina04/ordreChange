@@ -1,0 +1,13 @@
+﻿Étape 1 : Modélisation des Classes et Entités
+	Analyse du diagramme de classe :
+		Votre diagramme est bien structuré, mais vous pourriez affiner certains détails pour clarifier les responsabilités. Par exemple :
+		Lier l'entité Agent aux rôles d'Acheteur et Validateur avec une table de rôles si des agents peuvent avoir plusieurs rôles.
+		Ajouter une propriété DateCreation et DateDerniereModification dans Ordre pour suivre les changements d’état.
+
+	Créer les classes dans le projet :
+		Modélisez les entités en classes C# (Ordre, Agent, HistoriqueOrdre, etc.) en suivant le diagramme. Utilisez les annotations Entity Framework Core pour définir les relations et les contraintes.
+
+	Définir les tables de la base de données avec EF Core :
+		Configurez les entités Ordre, Agent, et HistoriqueOrdre avec Entity Framework Core en définissant les clés primaires, les relations (HasMany, HasOne, etc.), et les types de données.
+
+

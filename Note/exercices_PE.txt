@@ -1,0 +1,49 @@
+Système de Gestion des Ordres de Change
+Objectif : Évaluer la conception technique, l’utilisation de design patterns pour structurer la logique métier complexe, et les bonnes pratiques de développement.
+
+Contexte
+L'exercice se déroule dans un système de gestion d'ordres de change pour une plateforme de conversion de devises. 
+
+Les agents doivent pouvoir créer, modifier et valider des ordres d'achat ou de vente de devises, avec des conversions de taux de change dynamiques. Les ordres ont différents états (ex. : En attente, Validé, Annulé) et doivent être stockés de manière sécurisée.
+
+Exigences fonctionnelles
+Création d’Ordre : Permettre la saisie d’un ordre d'achat ou de vente pour une devise spécifique.
+Conversion de Montant : Calculer le montant converti en fonction du taux de change actuel.
+Gestion des Statuts : Gérer différents statuts d'ordre (En attente, Validé, Annulé, A modifier).
+Historique des Ordres : Conserver l’historique des changements de statut et de montant pour chaque ordre.
+Dashboard : nombre des ordres sur différents statut
+
+
+RESTFull
+LOG
+Conception technique (Diagramme de classes)
+Design pattern
+
+
+DOTNET
+	Entity Framework Core
+	Dependency Injection
+	AutoMapper
+	NLog
+	xUnit
+	Swagger
+----------------------------------------------------------------------------------------------------------------------------------
+Selons le contexte du projet, 
+
+Réaliser les relations de diagramme de classes tels que : les associations, Inheritance, Realization/Implementation, Dependency, Aggregation, Composition
+
+Voici les étapes que vous devez suivre pour créer un diagramme de classe => 
+Identifier les noms de classe
+Distinguer les relations : déterminer comment chacune des classes ou chacun des objets sont liés les uns aux autres. Recherchez les points communs et les abstractions entre eux ; cela vous aidera à les regrouper lorsque vous ferez le diagramme de classe.
+Créer la structure : ajoutez les noms des classes et reliez-les avec les connecteurs appropriés 
+
+
+à noter que le noms des propriétés et les methodes ainsi que les classes doivent être en français
+
+
+Je crois qu'il faut ajouter un des roles pour Distinguer le validateur et l'acheteur, n'est-ce pas ?
+
+Quand est-il de la vente de devise suivant cela ?
+à noter que c'est l'agent acheteur qui aura la possibilité de faire aussi une vente de devise, n'est-ce pas ?
+
+"+vendreOrdre(montant : float, devise : String) : Ordre" est-elle encore nécessaire si on a déjà "+creerOrdre(typeTransaction : String, montant : float, devise : String) : Ordre" ?

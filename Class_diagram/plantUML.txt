@@ -1,16 +1,16 @@
 @startuml
 
+enum Role {
+    Acheteur
+    Validateur
+}
+
 class Agent {
     +idAgent: int
     +nom: String
-}
-
-class Acheteur {
+    +role: Role
     +creerOrdre(typeTransaction: String, montant: float, devise: String): Ordre
     +modifierOrdre(ordre: Ordre): void
-}
-
-class Validateur {
     +validerOrdre(ordre: Ordre): void
 }
 
@@ -20,6 +20,8 @@ class Ordre {
     +devise: String
     +statut: String
     +typeTransaction: String
+    +dateCreation: Date
+    +dateDerniereModification: Date
     +calculerMontantConverti(taux: float): float
     +changerStatut(nouveauStatut: String): void
 }
@@ -29,16 +31,14 @@ class TauxChangeService {
 }
 
 class HistoriqueOrdre {
+    +idHistorique: int
     +date: Date
     +statut: String
     +montant: float
 }
 
 # Relations
-Agent <|-- Acheteur
-Agent <|-- Validateur
-Acheteur --> Ordre : crée
-Validateur --> Ordre : valide
+Agent --> Ordre : crée / valide
 Ordre *-- HistoriqueOrdre : historique
 Ordre --> TauxChangeService : utilise
 
