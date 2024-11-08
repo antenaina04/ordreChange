@@ -1,0 +1,45 @@
+@startuml
+
+class Agent {
+    +idAgent: int
+    +nom: String
+}
+
+class Acheteur {
+    +creerOrdre(typeTransaction: String, montant: float, devise: String): Ordre
+    +modifierOrdre(ordre: Ordre): void
+}
+
+class Validateur {
+    +validerOrdre(ordre: Ordre): void
+}
+
+class Ordre {
+    +idOrdre: int
+    +montant: float
+    +devise: String
+    +statut: String
+    +typeTransaction: String
+    +calculerMontantConverti(taux: float): float
+    +changerStatut(nouveauStatut: String): void
+}
+
+class TauxChangeService {
+    +getTaux(deviseSource: String, deviseCible: String): float
+}
+
+class HistoriqueOrdre {
+    +date: Date
+    +statut: String
+    +montant: float
+}
+
+# Relations
+Agent <|-- Acheteur
+Agent <|-- Validateur
+Acheteur --> Ordre : crée
+Validateur --> Ordre : valide
+Ordre *-- HistoriqueOrdre : historique
+Ordre --> TauxChangeService : utilise
+
+@enduml
