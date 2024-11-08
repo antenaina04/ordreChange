@@ -1,6 +1,9 @@
 using System.Security.Authentication;
 using Microsoft.EntityFrameworkCore;
 using ordreChange.Data;
+using ordreChange.Services.Implementations;
+using ordreChange.Services.Interfaces;
+using ordreChange.UnitOfWork;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,10 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Dependency Injection
+builder.Services.AddScoped<ITauxChangeService, TauxChangeService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IOrdreService, OrdreService>();
 
 // Add services to the container.
 builder.Services.AddControllers();

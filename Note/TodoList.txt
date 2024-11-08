@@ -1,13 +1,28 @@
 ﻿Étape 1 : Modélisation des Classes et Entités
-	Analyse du diagramme de classe :
-		Votre diagramme est bien structuré, mais vous pourriez affiner certains détails pour clarifier les responsabilités. Par exemple :
-		Lier l'entité Agent aux rôles d'Acheteur et Validateur avec une table de rôles si des agents peuvent avoir plusieurs rôles.
-		Ajouter une propriété DateCreation et DateDerniereModification dans Ordre pour suivre les changements d’état.
+	Analyse du diagramme de classe [OK]
+	Créer les classes dans le projet [OK]
+	Définir les tables de la base de données avec EF Core [OK]
 
-	Créer les classes dans le projet :
-		Modélisez les entités en classes C# (Ordre, Agent, HistoriqueOrdre, etc.) en suivant le diagramme. Utilisez les annotations Entity Framework Core pour définir les relations et les contraintes.
+Étape 2 : Configuration de la Base de Données SQL Server
+	Ajouter la connexion à SQL Server [OK]
+	Configurer DbContext [OK]
+	Exécuter les migrations [OK]
 
-	Définir les tables de la base de données avec EF Core :
-		Configurez les entités Ordre, Agent, et HistoriqueOrdre avec Entity Framework Core en définissant les clés primaires, les relations (HasMany, HasOne, etc.), et les types de données.
+Étape 3 : Développer les Services et Design Patterns
+	Service pour le Taux de Change [OK]
+	Service pour gérer les ordres (Pattern de Service) [OK]
 
+Étape 4 : Contrôleurs RESTful
+	Contrôleurs RESTful
+	Création du contrôleur OrdreController
 
+Étape 5 : Configuration et Bonnes Pratiques
+	Injection de dépendances
+	Configuration de NLog
+	Automapper 
+
+Étape 6 : Tests Unitaires
+	Tests avec xUnit
+
+Étape 7 : Documentation et Swagger
+	Swagger 
