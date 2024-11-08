@@ -1,4 +1,6 @@
 using System.Security.Authentication;
+using Microsoft.EntityFrameworkCore;
+using ordreChange.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,11 @@ builder.WebHost.ConfigureKestrel(options =>
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
     });
 });
+
+// Add services to the container.
+builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 // Add services to the container.
 builder.Services.AddControllers();
