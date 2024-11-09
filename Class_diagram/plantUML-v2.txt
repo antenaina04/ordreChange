@@ -1,0 +1,58 @@
+@startuml
+!theme amiga
+enum Role {
+    Acheteur
+    Validateur
+}
+
+class Agent {
+    +idAgent: int
+    +nom: String
+    +role: Role
+    +username: String
+    +passwordHash: String
+    +creerOrdre(typeTransaction: String, montant: float, devise: String): Ordre
+    +modifierOrdre(ordre: Ordre): void
+    +validerOrdre(ordre: Ordre): void
+}
+
+class Ordre {
+    +idOrdre: int
+    +montant: float
+    +devise: String
+    +statut: String
+    +typeTransaction: String
+    +dateCreation: Date
+    +dateDerniereModification: Date
+    +calculerMontantConverti(taux: float): float
+    +changerStatut(nouveauStatut: String): void
+}
+
+class TauxChangeService {
+    +getTaux(deviseSource: String, deviseCible: String): float
+}
+
+class HistoriqueOrdre {
+    +idHistorique: int
+    +date: Date
+    +statut: String
+    +montant: float
+}
+
+class AuthController {
+    +login(username: String, password: String): JwtToken
+    +generateJwtToken(agentId: int, role: Role): JwtToken
+}
+
+class JwtToken {
+    +token: String
+    +expiration: DateTime
+}
+
+
+Agent --> Ordre : crée / valide
+Ordre *-- HistoriqueOrdre : historique
+Ordre --> TauxChangeService : utilise
+AuthController --> Agent : Authentifie
+AuthController --> JwtToken : génère
+@enduml
