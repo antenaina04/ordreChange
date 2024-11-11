@@ -1,60 +1,33 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+﻿using Microsoft.AspNetCore.Mvc;
+using ordreChange.Services.Interfaces;
 
-//[Authorize] //! Pour exiger que l’utilisateur soit authentifié
-[Route("api/[controller]")]
-[ApiController]
-public class AuthController : ControllerBase
+namespace ordreChange.Controllers
 {
-    private readonly IConfiguration _configuration;
-
-    public AuthController(IConfiguration configuration)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
     {
-        _configuration = configuration;
-    }
+        private readonly IAuthService _authService;
 
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginModel login)
-    {
-        // Exemple simplifié : Validez l'utilisateur dans la base de données ici
-        if (login.Username == "agent" && login.Password == "password") // Remplacez par la validation réelle
+        public AuthController(IAuthService authService)
         {
-            var token = GenerateJwtToken("agentId", "Acheteur");
+            _authService = authService;
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginModel login)
+        {
+            var token = await _authService.AuthenticateAsync(login.Username, login.Password);
+            if (token == null)
+                return Unauthorized();
+
             return Ok(new { token });
         }
-        return Unauthorized();
     }
 
-    private string GenerateJwtToken(string agentId, string role)
+    public class LoginModel
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]));
-        var creds = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, agentId),
-            new Claim(ClaimTypes.Role, role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(double.Parse(jwtSettings["ExpiryMinutes"])),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        public required string Username { get; set; }
+        public required string Password { get; set; }
     }
-}
-
-public class LoginModel
-{
-    public required string Username { get; set; }
-    public required string Password { get; set; }
 }

@@ -1,4 +1,5 @@
-﻿using ordreChange.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ordreChange.Data;
 using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
 
@@ -9,6 +10,9 @@ namespace ordreChange.Repositories.Implementations
         public AgentRepository(OrdreDeChangeContext context) : base(context)
         {
         }
-        // Implémentation spécifique à Agent si nécessaire
+        public async Task<Agent?> GetByUsernameAsync(string username)
+        {
+            return await _context.Agents.FirstOrDefaultAsync(a => a.Username == username);
+        }
     }
 }
