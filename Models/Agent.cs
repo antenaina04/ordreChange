@@ -19,6 +19,14 @@ namespace ordreChange.Models
         public required string Nom { get; set; }
 
         [Required]
+        [MaxLength(50)]
+        public required string Username { get; set; }
+
+        [Required]
+        public required string PasswordHash { get; set; } // Hashed PASSWORD
+
+
+        [Required]
         public Role Role { get; set; }
 
         // Collection d'ordres créés ou validés

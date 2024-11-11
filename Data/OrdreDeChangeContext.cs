@@ -24,6 +24,15 @@ namespace ordreChange.Data
                 .HasMaxLength(100);
 
             modelBuilder.Entity<Agent>()
+                .Property(a => a.Username)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<Agent>()
+                .Property(a => a.PasswordHash)
+                .IsRequired();
+
+            modelBuilder.Entity<Agent>()
                 .Property(a => a.Role)
                 .IsRequired();
 
