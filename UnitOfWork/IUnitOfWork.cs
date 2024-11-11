@@ -1,4 +1,5 @@
-﻿using ordreChange.Repositories.Interfaces;
+﻿using ordreChange.Models;
+using ordreChange.Repositories.Interfaces;
 
 namespace ordreChange.UnitOfWork
 {
@@ -6,6 +7,7 @@ namespace ordreChange.UnitOfWork
     {
         IOrdreRepository Ordres { get; }
         IAgentRepository Agents { get; }
+        IRepository<HistoriqueOrdre> HistoriqueOrdres { get; }
         Task<int> CompleteAsync();
     }
 }

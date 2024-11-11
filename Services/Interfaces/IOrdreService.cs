@@ -6,7 +6,7 @@ namespace ordreChange.Services.Interfaces
     {
         Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise);
         Task<Ordre?> GetOrdreByIdAsync(int id);
-        Task<bool> ValiderOrdreAsync(int ordreId);
+        Task<bool> ValiderOrdreAsync(int ordreId, int agentId);
         Task<bool> ModifierOrdreAsync(Ordre ordre);
     }
 }
