@@ -7,10 +7,12 @@ namespace ordreChange.Services.Implementations
     public class OrdreService : IOrdreService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ITauxChangeService _tauxChangeService;
 
-        public OrdreService(IUnitOfWork unitOfWork)
+        public OrdreService(IUnitOfWork unitOfWork, ITauxChangeService tauxChangeService)
         {
             _unitOfWork = unitOfWork;
+            _tauxChangeService = tauxChangeService;
         }
 
         public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise)
@@ -34,6 +36,10 @@ namespace ordreChange.Services.Implementations
             await _unitOfWork.CompleteAsync();
 
             return ordre;
+        }
+        public async Task<Ordre?> GetOrdreByIdAsync(int id)
+        {
+            return await _unitOfWork.Ordres.GetByIdAsync(id);
         }
 
         public async Task<bool> ValiderOrdreAsync(int ordreId)
