@@ -61,6 +61,10 @@ namespace ordreChange.Data
                 .Property(o => o.DateCreation)
                 .IsRequired();
 
+            modelBuilder.Entity<Ordre>()
+                .Property(o => o.DateDerniereModification)
+                .IsRequired(false); // Configuration pour autoriser une valeur null
+
             // Configuration pour HistoriqueOrdre
             modelBuilder.Entity<HistoriqueOrdre>()
                 .HasOne(h => h.Ordre)

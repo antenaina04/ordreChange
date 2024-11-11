@@ -26,6 +26,8 @@ namespace ordreChange.Models
         [Required]
         public DateTime DateCreation { get; set; }
 
+        public DateTime? DateDerniereModification { get; set; }
+
         // Conversion en fonction du taux de change, stocké si calculé
         public float MontantConverti { get; set; }
 

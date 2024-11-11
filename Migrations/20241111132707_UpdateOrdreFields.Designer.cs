@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ordreChange.Data;
 
@@ -11,9 +12,11 @@ using ordreChange.Data;
 namespace ordreChange.Migrations
 {
     [DbContext(typeof(OrdreDeChangeContext))]
-    partial class OrdreDeChangeContextModelSnapshot : ModelSnapshot
+    [Migration("20241111132707_UpdateOrdreFields")]
+    partial class UpdateOrdreFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
