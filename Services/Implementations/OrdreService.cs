@@ -21,20 +21,19 @@ namespace ordreChange.Services.Implementations
             return montant * taux;
         }
 
-        public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise)
+        public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null || agent.Role != Role.Acheteur)
                 throw new InvalidOperationException("Agent non valide ou non autorisé à créer un ordre.");
 
-            string deviseDeReference = "USD"; // FIX ME
-
-            double montantConverti = ConvertirMontant(montant, devise, deviseDeReference);
+            double montantConverti = ConvertirMontant(montant, devise, deviseCible);
 
             var ordre = new Ordre
             {
                 Montant = montant,
                 Devise = devise,
+                DeviseCible = deviseCible,
                 Statut = "En attente",
                 TypeTransaction = typeTransaction,
                 DateCreation = DateTime.UtcNow,

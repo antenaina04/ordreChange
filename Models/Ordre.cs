@@ -13,11 +13,15 @@ namespace ordreChange.Models
 
         [Required]
         [MaxLength(3)]
-        public required string Devise { get; set; } // Code de devise (ex. USD, EUR)
+        public required string Devise { get; set; } // // USD, EUR, ...
+
+        [Required]
+        [MaxLength(3)]
+        public required string DeviseCible { get; set; } // USD, EUR, ...
 
         [Required]
         [MaxLength(20)]
-        public required string Statut { get; set; } // En attente, Validé, Annulé, etc.
+        public required string Statut { get; set; } // En attente, Validé, Annulé
 
         [Required]
         [MaxLength(20)]
@@ -28,15 +32,14 @@ namespace ordreChange.Models
 
         public DateTime? DateDerniereModification { get; set; }
 
-        // Conversion en fonction du taux de change, stocké si calculé
         public float MontantConverti { get; set; }
 
-        // Relation avec l'Agent (clé étrangère)
+        // FK
         public int IdAgent { get; set; }
         [ForeignKey("IdAgent")]
         public required Agent Agent { get; set; }
 
-        // Historique des statuts de l'ordre
+        // Historique statuts ordre
         public ICollection<HistoriqueOrdre>? HistoriqueOrdres { get; set; }
     }
 }

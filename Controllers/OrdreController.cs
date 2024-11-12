@@ -21,14 +21,14 @@ namespace ordreChange.Controllers
         [HttpPost("creer")]
         public async Task<IActionResult> CreerOrdre([FromBody] CreerOrdreDto dto)
         {
-            // Récupérer l'ID de l'agent depuis le token JWT
+            // ID via JWT
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             if (agentId == 0) return Unauthorized("Agent non valide.");
 
             try
             {
-                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise);
+                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible);
                 return CreatedAtAction(nameof(GetOrdre), new { id = ordre.IdOrdre }, new OrdreDto
                 {
                     IdOrdre = ordre.IdOrdre,
@@ -81,7 +81,7 @@ namespace ordreChange.Controllers
         [HttpPost("{id}/valider")]
         public async Task<IActionResult> ValiderOrdre(int id)
         {
-            // Récupérer l'ID de l'agent depuis le token JWT
+            // ID via JWT
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             try
@@ -99,11 +99,12 @@ namespace ordreChange.Controllers
         }
     }
 
-    // DTO pour la création d'ordre
+    // DTO pour création ordre
     public class CreerOrdreDto
     {
         public required string TypeTransaction { get; set; }
         public required float Montant { get; set; }
         public required string Devise { get; set; }
+        public required string DeviseCible { get; set; }
     }
 }

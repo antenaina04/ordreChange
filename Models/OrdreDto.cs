@@ -5,6 +5,7 @@
         public int IdOrdre { get; set; }
         public float Montant { get; set; }
         public string? Devise { get; set; }
+        public string? DeviseCible { get; set; }
         public string? Statut { get; set; }
         public string? TypeTransaction { get; set; }
         public DateTime DateCreation { get; set; }
