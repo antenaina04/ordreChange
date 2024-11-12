@@ -15,12 +15,21 @@ namespace ordreChange.Services.Implementations
             _unitOfWork = unitOfWork;
             _tauxChangeService = tauxChangeService;
         }
+        public double ConvertirMontant(double montant, string deviseSource, string deviseCible)
+        {
+            var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
+            return montant * taux;
+        }
 
         public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null || agent.Role != Role.Acheteur)
                 throw new InvalidOperationException("Agent non valide ou non autorisé à créer un ordre.");
+
+            string deviseDeReference = "USD"; // FIX ME
+
+            double montantConverti = ConvertirMontant(montant, devise, deviseDeReference);
 
             var ordre = new Ordre
             {
@@ -29,6 +38,7 @@ namespace ordreChange.Services.Implementations
                 Statut = "En attente",
                 TypeTransaction = typeTransaction,
                 DateCreation = DateTime.UtcNow,
+                MontantConverti = (float)montantConverti, 
                 Agent = agent
             };
 
@@ -38,7 +48,7 @@ namespace ordreChange.Services.Implementations
             {
                 Date = DateTime.UtcNow,
                 Statut = ordre.Statut,
-                Montant = ordre.Montant,
+                Montant = ordre.MontantConverti, 
                 Ordre = ordre
             };
             await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
@@ -48,6 +58,7 @@ namespace ordreChange.Services.Implementations
 
             return ordre;
         }
+
 
         public async Task<Ordre?> GetOrdreByIdAsync(int id)
         {
