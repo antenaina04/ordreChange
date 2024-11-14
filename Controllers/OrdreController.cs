@@ -176,6 +176,34 @@ namespace ordreChange.Controllers
             return Ok(historique);
         }
 
+        [HttpGet("statut/{statut}")]
+        public async Task<IActionResult> GetOrdresByStatut(string statut)
+        {
+            var ordres = await _ordreService.GetOrdresByStatutAsync(statut);
+            if (ordres == null || ordres.Count == 0)
+                return NotFound($"Aucun ordre trouvé avec le statut '{statut}'.");
+
+            var ordreDtos = ordres.Select(o => new OrdreDto
+            {
+                IdOrdre = o.IdOrdre,
+                Montant = o.Montant,
+                Devise = o.Devise,
+                Statut = o.Statut,
+                TypeTransaction = o.TypeTransaction,
+                DateCreation = o.DateCreation,
+                MontantConverti = o.MontantConverti,
+                IdAgent = o.IdAgent,
+                Agent = new AgentDto
+                {
+                    IdAgent = o.Agent.IdAgent,
+                    Nom = o.Agent.Nom,
+                    Role = o.Agent.Role
+                }
+            }).ToList();
+
+            return Ok(ordreDtos);
+        }
+
     }
 
     // DTO pour création ordre

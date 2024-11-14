@@ -271,5 +271,9 @@ namespace ordreChange.Services.Implementations
         {
             return await _unitOfWork.Ordres.GetHistoriqueByOrdreIdAsync(ordreId);
         }
+        public async Task<List<Ordre>> GetOrdresByStatutAsync(string statut)
+        {
+            return await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
+        }
     }
 }

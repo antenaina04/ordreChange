@@ -21,6 +21,12 @@ namespace ordreChange.Repositories.Implementations
                 .OrderBy(h => h.Date)
                 .ToListAsync();
         }
-        
+        public async Task<List<Ordre>> GetOrdresByStatutAsync(string statut)
+        {
+            return await _context.Ordres
+                .Where(o => o.Statut == statut)
+                .Include(o => o.Agent)
+                .ToListAsync();
+        }
     }
 }
