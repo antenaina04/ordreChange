@@ -8,7 +8,7 @@
 
         private TauxChangeMatrix()
         {
-            string[] devises = { "USD", "EUR", "CAD", "GBP", "AR" };
+            string[] devises = { "USD", "EUR", "CAD", "GBP", "MGA" };
             _deviseIndices = new Dictionary<string, int>();
             for (int i = 0; i < devises.Length; i++)
                 _deviseIndices[devises[i]] = i;
@@ -35,23 +35,23 @@
             if (fromCurrency == "USD" && toCurrency == "EUR") return 0.92;
             if (fromCurrency == "USD" && toCurrency == "CAD") return 1.25;
             if (fromCurrency == "USD" && toCurrency == "GBP") return 0.73;
-            if (fromCurrency == "USD" && toCurrency == "AR") return 4000.00;
+            if (fromCurrency == "USD" && toCurrency == "MGA") return 4000.00;
             if (fromCurrency == "EUR" && toCurrency == "USD") return 1.09;
             if (fromCurrency == "EUR" && toCurrency == "CAD") return 1.36;
             if (fromCurrency == "EUR" && toCurrency == "GBP") return 0.79;
-            if (fromCurrency == "EUR" && toCurrency == "AR") return 4350.00;
+            if (fromCurrency == "EUR" && toCurrency == "MGA") return 4350.00;
             if (fromCurrency == "CAD" && toCurrency == "USD") return 0.80;
             if (fromCurrency == "CAD" && toCurrency == "EUR") return 0.74;
             if (fromCurrency == "CAD" && toCurrency == "GBP") return 0.58;
-            if (fromCurrency == "CAD" && toCurrency == "AR") return 3200.00;
+            if (fromCurrency == "CAD" && toCurrency == "MGA") return 3200.00;
             if (fromCurrency == "GBP" && toCurrency == "USD") return 1.37;
             if (fromCurrency == "GBP" && toCurrency == "EUR") return 1.27;
             if (fromCurrency == "GBP" && toCurrency == "CAD") return 1.72;
-            if (fromCurrency == "GBP" && toCurrency == "AR") return 5500.00;
-            if (fromCurrency == "AR" && toCurrency == "USD") return 0.00025;
-            if (fromCurrency == "AR" && toCurrency == "EUR") return 0.00023;
-            if (fromCurrency == "AR" && toCurrency == "CAD") return 0.00031;
-            if (fromCurrency == "AR" && toCurrency == "GBP") return 0.00018;
+            if (fromCurrency == "GBP" && toCurrency == "MGA") return 5500.00;
+            if (fromCurrency == "MGA" && toCurrency == "USD") return 0.00025;
+            if (fromCurrency == "MGA" && toCurrency == "EUR") return 0.00023;
+            if (fromCurrency == "MGA" && toCurrency == "CAD") return 0.00031;
+            if (fromCurrency == "MGA" && toCurrency == "GBP") return 0.00018;
 
             return 1.0;
         }

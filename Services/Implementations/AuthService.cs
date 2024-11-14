@@ -25,7 +25,7 @@ namespace ordreChange.Services.Implementations
         {
             var agent = await _agentRepository.GetByUsernameAsync(username);
             /*
-            // à decommenter si le mot de passe déjà enregistré dans la base de données est déja hashé
+            // Si PWD déjà enregistré dans BDD est déja hashé
             if (agent == null || !VerifyPasswordHash(password, agent.PasswordHash))
                 return null;
             */
@@ -52,7 +52,6 @@ namespace ordreChange.Services.Implementations
                 return computedHash == storedHash;
             }
         }
-        // Util pour génération des hash pour nouveaux PWD
         public string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
@@ -64,7 +63,6 @@ namespace ordreChange.Services.Implementations
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             string secureKey = jwtSettings["Secret"] ?? SecurityHelper.GenerateSecureKey(32);
-            //var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]));
             var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secureKey));
             var creds = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 

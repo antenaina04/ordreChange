@@ -29,7 +29,6 @@ namespace ordreChange.Models
         [Required]
         public Role Role { get; set; }
 
-        // Collection d'ordres créés ou validés
         public ICollection<Ordre>? Ordres { get; set; }
     }
 

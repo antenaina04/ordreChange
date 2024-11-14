@@ -9,6 +9,5 @@ namespace ordreChange.Repositories.Implementations
         public OrdreRepository(OrdreDeChangeContext context) : base(context)
         {
         }
-        // Implémentation spécifique à Ordre si nécessaire
     }
 }

@@ -13,7 +13,7 @@ namespace ordreChange.Models
 
         [Required]
         [MaxLength(3)]
-        public required string Devise { get; set; } // // USD, EUR, ...
+        public required string Devise { get; set; } // USD, EUR, ...
 
         [Required]
         [MaxLength(3)]
@@ -39,7 +39,6 @@ namespace ordreChange.Models
         [ForeignKey("IdAgent")]
         public required Agent Agent { get; set; }
 
-        // Historique statuts ordre
         public ICollection<HistoriqueOrdre>? HistoriqueOrdres { get; set; }
     }
 }
