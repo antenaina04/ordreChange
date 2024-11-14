@@ -13,7 +13,11 @@ namespace ordreChange.Models
 
         [Required]
         [MaxLength(20)]
-        public required string Statut { get; set; } 
+        public required string Statut { get; set; }
+
+        [Required]
+        [MaxLength(20)]
+        public required string Action { get; set; }
 
         [Required]
         public float Montant { get; set; } 
