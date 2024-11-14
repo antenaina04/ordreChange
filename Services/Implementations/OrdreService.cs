@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ordreChange.Models;
+using ordreChange.Services.Helpers;
 using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
 
@@ -9,25 +10,42 @@ namespace ordreChange.Services.Implementations
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITauxChangeService _tauxChangeService;
+        private readonly CurrencyExchangeService _currencyExchangeService;
 
-        public OrdreService(IUnitOfWork unitOfWork, ITauxChangeService tauxChangeService)
+        public OrdreService(IUnitOfWork unitOfWork, ITauxChangeService tauxChangeService, CurrencyExchangeService currencyExchangeService)
         {
             _unitOfWork = unitOfWork;
             _tauxChangeService = tauxChangeService;
+            _currencyExchangeService = currencyExchangeService;
         }
-        public double ConvertirMontant(double montant, string deviseSource, string deviseCible)
+        
+        public double ConvertirMontantViaMatrice(double montant, string deviseSource, string deviseCible)
         {
             var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
             return montant * taux;
         }
 
+        /*
+        public async Task<double> ConvertirMontantViaExchangeRatesAPI(double montant, string deviseSource, string deviseCible)
+        {
+            var taux = await _currencyExchangeService.GetExchangeRateAsync(deviseSource, deviseCible);
+
+            if (taux == null)
+            {
+                throw new Exception("Erreur lors de la récuperation du taux de change par l'API externe");
+            }
+
+            return montant * (double)taux;
+        }
+        */
         public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null || agent.Role != Role.Acheteur)
                 throw new InvalidOperationException("Agent non valide ou non autorisé à créer un ordre.");
 
-            double montantConverti = ConvertirMontant(montant, devise, deviseCible);
+            double montantConverti = ConvertirMontantViaMatrice(montant, devise, deviseCible); // Matrice
+            //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(montant, devise, deviseCible); // API Externe
 
             var ordre = new Ordre
             {

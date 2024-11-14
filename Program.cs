@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using ordreChange.Data;
 using ordreChange.Repositories.Implementations;
 using ordreChange.Repositories.Interfaces;
+using ordreChange.Services.Helpers;
 using ordreChange.Services.Implementations;
 using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
@@ -61,6 +62,9 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Configuration du CurrencyExchangeService
+builder.Services.AddHttpClient<CurrencyExchangeService>();
+builder.Services.AddScoped<CurrencyExchangeService>();
 
 // Dependency Injection
 builder.Services.AddScoped<IAgentRepository, AgentRepository>();
