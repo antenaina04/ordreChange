@@ -171,7 +171,6 @@ namespace ordreChange.Controllers
     {
         public required float Montant { get; set; }
         public required string Devise { get; set; }
-        public required string Statut { get; set; }
         public required string DeviseCible { get; set; }
         public required string TypeTransaction { get; set; }
     }

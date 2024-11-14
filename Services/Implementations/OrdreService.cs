@@ -211,6 +211,7 @@ namespace ordreChange.Services.Implementations
             // Appliquer les modifications
             ordreExistant.Montant = dto.Montant;
             ordreExistant.Devise = dto.Devise;
+            ordreExistant.Statut = "En attente";
             ordreExistant.DeviseCible = dto.DeviseCible;
             ordreExistant.TypeTransaction = dto.TypeTransaction;
             ordreExistant.MontantConverti = (float)montantConverti;
@@ -221,7 +222,7 @@ namespace ordreChange.Services.Implementations
             var historique = new HistoriqueOrdre
             {
                 Date = DateTime.UtcNow,
-                Statut = ordreExistant.Statut,
+                Statut = "En attente",
                 Montant = ordreExistant.MontantConverti,
                 Ordre = ordreExistant
             };
