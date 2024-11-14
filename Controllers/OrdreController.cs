@@ -78,7 +78,7 @@ namespace ordreChange.Controllers
             });
         }
         [HttpPost("{id}/annuler")]
-        public async Task<IActionResult> annulerOrdre(int id)
+        public async Task<IActionResult> AnnulerOrdre(int id)
         {
             // ID via JWT
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
@@ -113,11 +113,11 @@ namespace ordreChange.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Forbid(ex.Message); // L'agent n'est pas autorisé à valider l'ordre
+                return Forbid(ex.Message); // AUTHORIZATION ERROR
             }
         }
         [HttpPost("{id}/a_modifier")]
-        public async Task<IActionResult> refuserOrdre(int id)
+        public async Task<IActionResult> RefuserOrdre(int id)
         {
             // ID via JWT
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
@@ -132,9 +132,31 @@ namespace ordreChange.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Forbid(ex.Message); // L'agent n'est pas autorisé à refuser l'ordre
+                return Forbid(ex.Message);  // AUTHORIZATION ERROR
             }
         }
+        [HttpPut("{id}/modifier")]
+        public async Task<IActionResult> ModifierOrdre(int id, [FromBody] ModifierOrdreDto dto)
+        {
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+            if (agentId == 0) return Unauthorized("Agent non valide.");
+
+            try
+            {
+                // On envoie directement les informations de modification au service
+                var result = await _ordreService.ModifierOrdreAsync(id, agentId, dto);
+
+                if (!result)
+                    return BadRequest("L'ordre ne peut pas être modifié.");
+
+                return Ok("Modification de l'ordre effectuée avec succès.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
     }
 
     // DTO pour création ordre
@@ -144,5 +166,13 @@ namespace ordreChange.Controllers
         public required float Montant { get; set; }
         public required string Devise { get; set; }
         public required string DeviseCible { get; set; }
+    }
+    public class ModifierOrdreDto
+    {
+        public required float Montant { get; set; }
+        public required string Devise { get; set; }
+        public required string Statut { get; set; }
+        public required string DeviseCible { get; set; }
+        public required string TypeTransaction { get; set; }
     }
 }

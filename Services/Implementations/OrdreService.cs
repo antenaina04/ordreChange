@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using ordreChange.Controllers;
 using ordreChange.Models;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
+using System.Reflection.Metadata;
 
 namespace ordreChange.Services.Implementations
 {
@@ -18,13 +20,13 @@ namespace ordreChange.Services.Implementations
             _tauxChangeService = tauxChangeService;
             _currencyExchangeService = currencyExchangeService;
         }
-        
+
         public double ConvertirMontantViaMatrice(double montant, string deviseSource, string deviseCible)
         {
             var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
             return montant * taux;
         }
-        
+
         /*
         public async Task<double> ConvertirMontantViaExchangeRatesAPI(double montant, string deviseSource, string deviseCible)
         {
@@ -144,19 +146,91 @@ namespace ordreChange.Services.Implementations
             await _unitOfWork.CompleteAsync();
             return true;
         }
-
-        public async Task<bool> ModifierOrdreAsync(Ordre ordre)
+        /*
+        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, Ordre ordreModifications)
         {
-            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordre.IdOrdre);
-            if (ordreExistant == null || ordreExistant.Statut != "En attente")
-                return false;
+            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
 
-            ordreExistant.Montant = ordre.Montant;
-            ordreExistant.Devise = ordre.Devise;
+            // Vérification si l'ordre existe
+            if (ordreExistant == null)
+                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+
+            // Vérifier que l'utilisateur est le créateur de l'ordre
+            if (ordreExistant.IdAgent != agentId)
+                throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à modifier");
+
+            // Vérification si l'ordre est déjà validé
+            if (ordreExistant.Statut == "Validé")
+                throw new InvalidOperationException("Ordre déjà validé et ne peut plus être modifié");
+
+            double montantConverti = ConvertirMontantViaMatrice(ordreModifications.Montant, ordreModifications.Devise, ordreModifications.DeviseCible); // Matrice
+                                                                                                                                                        //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(ordreModifications.Montant, ordreModifications.Devise, ordreModifications.DeviseCible); // API Externe
+
+            // Appliquer les modifications
+            ordreExistant.Montant = ordreModifications.Montant;
+            ordreExistant.Devise = ordreModifications.Devise;
+            ordreExistant.Statut = "En attente";
+            ordreExistant.DeviseCible = ordreModifications.DeviseCible;
+            ordreExistant.TypeTransaction = ordreModifications.TypeTransaction;
+            ordreExistant.MontantConverti = (float)montantConverti;
+            ordreExistant.DateDerniereModification = DateTime.UtcNow;
+
             _unitOfWork.Ordres.Update(ordreExistant);
+
+
+            // Ajouter un nouvel historique d'ordre pour cette modification
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = ordreExistant.Statut,
+                Montant = ordreExistant.MontantConverti,
+                Ordre = ordreExistant
+            };
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+
             await _unitOfWork.CompleteAsync();
 
             return true;
         }
+        */
+        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
+        {
+            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
+
+            if (ordreExistant == null)
+                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+
+            if (ordreExistant.IdAgent != agentId)
+                throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à le modifier.");
+
+            if (ordreExistant.Statut == "Validé")
+                throw new InvalidOperationException("Ordre déjà validé et ne peut plus être modifié.");
+
+            double montantConverti = ConvertirMontantViaMatrice(dto.Montant, dto.Devise, dto.DeviseCible);
+
+            // Appliquer les modifications
+            ordreExistant.Montant = dto.Montant;
+            ordreExistant.Devise = dto.Devise;
+            ordreExistant.DeviseCible = dto.DeviseCible;
+            ordreExistant.TypeTransaction = dto.TypeTransaction;
+            ordreExistant.MontantConverti = (float)montantConverti;
+            ordreExistant.DateDerniereModification = DateTime.UtcNow;
+
+            _unitOfWork.Ordres.Update(ordreExistant);
+
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = ordreExistant.Statut,
+                Montant = ordreExistant.MontantConverti,
+                Ordre = ordreExistant
+            };
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+
+            await _unitOfWork.CompleteAsync();
+
+            return true;
+        }
+
     }
 }

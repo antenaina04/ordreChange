@@ -1,4 +1,5 @@
-﻿using ordreChange.Models;
+﻿using ordreChange.Controllers;
+using ordreChange.Models;
 
 namespace ordreChange.Services.Interfaces
 {
@@ -8,6 +9,8 @@ namespace ordreChange.Services.Interfaces
         Task<Ordre?> GetOrdreByIdAsync(int id);
         Task<bool> ValiderOrdreAsync(int ordreId, int agentId);
         Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string statut);
-        Task<bool> ModifierOrdreAsync(Ordre ordre);
+        //Task<bool> ModifierOrdreAsync(int ordreId, int agentId, Ordre ordreModifications);
+        Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto ordreModifications);
+
     }
 }
