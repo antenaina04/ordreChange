@@ -157,6 +157,15 @@ namespace ordreChange.Controllers
             }
         }
 
+        [HttpGet("statut-counts")]
+        public async Task<IActionResult> GetOrdreStatutCounts()
+        {
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            var counts = await _ordreService.GetOrdreStatutCountsAsync(agentId);
+            return Ok(counts);
+        }
+
     }
 
     // DTO pour création ordre

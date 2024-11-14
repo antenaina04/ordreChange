@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using ordreChange.Controllers;
 using ordreChange.Models;
 using ordreChange.Services.Helpers;
@@ -233,5 +234,32 @@ namespace ordreChange.Services.Implementations
             return true;
         }
 
+
+        public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId)
+        {
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null || agent.Role != Role.Validateur)
+                throw new InvalidOperationException("Un agent non validateur n'est pas autorisé à voir les statistiques des ordres");
+
+            var ordres = await _unitOfWork.Ordres.GetAllAsync();
+            var counts = ordres
+                .GroupBy(o => o.Statut)
+                .Select(group => new
+                {
+                    Statut = group.Key,
+                    Count = group.Count()
+                })
+                .ToDictionary(g => g.Statut, g => g.Count);
+
+            var allStatusCounts = new Dictionary<string, int>
+            {
+                { "En attente", counts.GetValueOrDefault("En attente", 0) },
+                { "A modifier", counts.GetValueOrDefault("A modifier", 0) },
+                { "Annulé", counts.GetValueOrDefault("Annulé", 0) },
+                { "Validé", counts.GetValueOrDefault("Validé", 0) }
+            };
+
+            return allStatusCounts;
+        }
     }
 }
