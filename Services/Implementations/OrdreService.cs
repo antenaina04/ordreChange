@@ -24,7 +24,7 @@ namespace ordreChange.Services.Implementations
             var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
             return montant * taux;
         }
-
+        
         /*
         public async Task<double> ConvertirMontantViaExchangeRatesAPI(double montant, string deviseSource, string deviseCible)
         {
@@ -55,7 +55,7 @@ namespace ordreChange.Services.Implementations
                 Statut = "En attente",
                 TypeTransaction = typeTransaction,
                 DateCreation = DateTime.UtcNow,
-                MontantConverti = (float)montantConverti, 
+                MontantConverti = (float)montantConverti,
                 Agent = agent
             };
 
@@ -65,12 +65,12 @@ namespace ordreChange.Services.Implementations
             {
                 Date = DateTime.UtcNow,
                 Statut = ordre.Statut,
-                Montant = ordre.MontantConverti, 
+                Montant = ordre.MontantConverti,
                 Ordre = ordre
             };
             await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
 
-            // Appliquer les changements
+            // Appliquer changements
             await _unitOfWork.CompleteAsync();
 
             return ordre;
@@ -80,6 +80,41 @@ namespace ordreChange.Services.Implementations
         public async Task<Ordre?> GetOrdreByIdAsync(int id)
         {
             return await _unitOfWork.Ordres.GetByIdAsync(id);
+        }
+
+
+        /* UPDATE STATUS ORDRE */
+        public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string statut)
+        {
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+                throw new InvalidOperationException("L'utilisateur n'est pas trouvé pour faire l'action");
+            if (statut == "A modifier" && agent.Role != Role.Validateur)
+                throw new InvalidOperationException("Seul un validateur peut effectuer cette action");
+
+
+            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
+            if (ordre == null)
+                return false;
+            if (statut == "Annulé" && agentId != ordre.IdAgent)
+                throw new InvalidOperationException("Seul le créateur de cet ordre peut annuler cet ordre");
+
+            ordre.Statut = statut;
+            ordre.DateDerniereModification = DateTime.UtcNow;
+            _unitOfWork.Ordres.Update(ordre);
+
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = ordre.Statut,
+                Montant = ordre.MontantConverti,
+                Ordre = ordre
+            };
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+
+            // Appliquer les changements
+            await _unitOfWork.CompleteAsync();
+            return true;
         }
 
         public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)

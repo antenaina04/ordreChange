@@ -77,6 +77,25 @@ namespace ordreChange.Controllers
                 }
             });
         }
+        [HttpPost("{id}/annuler")]
+        public async Task<IActionResult> annulerOrdre(int id)
+        {
+            // ID via JWT
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            try
+            {
+                var result = await _ordreService.UpdateStatusOrdreAsync(id, agentId, "Annulé");
+                if (!result)
+                    return BadRequest("Le statut de l'ordre ne peut pas être changé.");
+
+                return Ok("Annulation de l'ordre effectué avec succès");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
 
         [HttpPost("{id}/valider")]
         public async Task<IActionResult> ValiderOrdre(int id)
@@ -95,6 +114,25 @@ namespace ordreChange.Controllers
             catch (InvalidOperationException ex)
             {
                 return Forbid(ex.Message); // L'agent n'est pas autorisé à valider l'ordre
+            }
+        }
+        [HttpPost("{id}/a_modifier")]
+        public async Task<IActionResult> refuserOrdre(int id)
+        {
+            // ID via JWT
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            try
+            {
+                var result = await _ordreService.UpdateStatusOrdreAsync(id, agentId, "A modifier");
+                if (!result)
+                    return BadRequest("Le statut de l'ordre ne peut pas être changé.");
+
+                return Ok("Refus de l'ordre effectué avec succès.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Forbid(ex.Message); // L'agent n'est pas autorisé à refuser l'ordre
             }
         }
     }
