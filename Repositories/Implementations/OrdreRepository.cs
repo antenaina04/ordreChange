@@ -14,5 +14,13 @@ namespace ordreChange.Repositories.Implementations
         {
             return await _context.Ordres.ToListAsync();
         }
+        public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
+        {
+            return await _context.HistoriqueOrdres
+                .Where(h => h.IdOrdre == ordreId)
+                .OrderBy(h => h.Date)
+                .ToListAsync();
+        }
+        
     }
 }

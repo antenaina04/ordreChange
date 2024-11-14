@@ -266,5 +266,10 @@ namespace ordreChange.Services.Implementations
 
             return allStatusCounts;
         }
+
+        public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
+        {
+            return await _unitOfWork.Ordres.GetHistoriqueByOrdreIdAsync(ordreId);
+        }
     }
 }

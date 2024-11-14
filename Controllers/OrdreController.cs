@@ -166,6 +166,16 @@ namespace ordreChange.Controllers
             return Ok(counts);
         }
 
+        [HttpGet("{id}/historique")]
+        public async Task<IActionResult> GetHistoriqueOrdre(int id)
+        {
+            var historique = await _ordreService.GetHistoriqueByOrdreIdAsync(id);
+            if (historique == null || historique.Count == 0)
+                return NotFound("Aucun historique trouvé pour cet ordre.");
+
+            return Ok(historique);
+        }
+
     }
 
     // DTO pour création ordre
@@ -182,5 +192,14 @@ namespace ordreChange.Controllers
         public required string Devise { get; set; }
         public required string DeviseCible { get; set; }
         public required string TypeTransaction { get; set; }
+    }
+    public class HistoriqueOrdreDto
+    {
+        public int IdHistorique { get; set; }
+        public DateTime Date { get; set; }
+        public string? Statut { get; set; }
+        public string? Action { get; set; }
+        public float Montant { get; set; }
+        public int IdOrdre { get; set; }
     }
 }

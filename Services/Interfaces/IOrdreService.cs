@@ -12,5 +12,6 @@ namespace ordreChange.Services.Interfaces
         //Task<bool> ModifierOrdreAsync(int ordreId, int agentId, Ordre ordreModifications);
         Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto ordreModifications);
         Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId);
+        Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId);
     }
 }
