@@ -37,6 +37,7 @@ namespace ordreChange.Controllers
                     Statut = ordre.Statut,
                     TypeTransaction = ordre.TypeTransaction,
                     DateCreation = ordre.DateCreation,
+                    DeviseCible = ordre.DeviseCible,
                     MontantConverti = ordre.MontantConverti,
                     IdAgent = ordre.IdAgent,
                     Agent = new AgentDto
