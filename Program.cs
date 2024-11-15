@@ -21,7 +21,6 @@ builder.Configuration["JwtSettings:Secret"] = secureKey;
 
 // JWT settings
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-//var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
 var secretKey = Encoding.ASCII.GetBytes(secureKey);
 
 // Configuration de l'authentification JWT
@@ -44,7 +43,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configure Kestrel to use TLS 1.2 and TLS 1.3 only, which are compatible with HTTP/2.
+// Configure Kestrel : FIX PBM compatibilité with HTTP/2.
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ConfigureHttpsDefaults(httpsOptions =>
@@ -58,7 +57,7 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
-// Add services to the container.
+// Ajout services dans le container
 builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -85,13 +84,13 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Ordre de Change API",
+        Title = "exercices_PE",
         Version = "v1",
         Description = "API pour la gestion des ordres de change",
         Contact = new OpenApiContact
         {
-            Name = "Support Team",
-            Email = "support@ordrechange.com"
+            Name = "Antenaina Randrianantoandro",
+            Email = "antenaina.randrianantoandro@pulse.mg"
         }
     });
 

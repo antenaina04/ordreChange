@@ -25,7 +25,7 @@ namespace ordreChange.Services.Implementations
         {
             var agent = await _agentRepository.GetByUsernameAsync(username);
             /*
-            // Si PWD déjà enregistré dans BDD est déja hashé
+            // Utilisation PWD déjà crypté dans la base de données
             if (agent == null || !VerifyPasswordHash(password, agent.PasswordHash))
                 return null;
             */
@@ -73,16 +73,6 @@ namespace ordreChange.Services.Implementations
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()) // Date d'émission
             };
-            /*
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],
-                audience: jwtSettings["Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(double.Parse(jwtSettings["ExpiryMinutes"])),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-            */
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
