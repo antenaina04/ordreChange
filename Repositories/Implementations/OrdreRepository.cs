@@ -28,5 +28,48 @@ namespace ordreChange.Repositories.Implementations
                 .Include(o => o.Agent)
                 .ToListAsync();
         }
+        public async Task<Dictionary<string, int>> GetStatutCountsAsync()
+        {
+            return await _context.Ordres
+                .GroupBy(o => o.Statut)
+                .Select(g => new { Statut = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.Statut, g => g.Count);
+        }
+        public async Task<bool> ValiderOrdreAsync(int ordreId)
+        {
+            var ordre = await _context.Ordres.FindAsync(ordreId);
+            if (ordre == null || ordre.Statut != "En attente")
+                return false;
+
+            ordre.Statut = "Validé";
+            ordre.DateDerniereModification = DateTime.UtcNow;
+
+            _context.Ordres.Update(ordre);
+            return true;
+        }
+        public async Task<bool> UpdateStatutOrdreAsync(int ordreId, string statut)
+        {
+            var ordre = await _context.Ordres.FindAsync(ordreId);
+            if (ordre == null || ordre.Statut != "En attente")
+                return false;
+
+            ordre.Statut = statut;
+            ordre.DateDerniereModification = DateTime.UtcNow;
+
+            _context.Ordres.Update(ordre);
+            return true;
+        }
+        public async Task AjouterHistoriqueAsync(Ordre ordre, string action)
+        {
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = ordre.Statut,
+                Action = action,
+                Montant = ordre.MontantConverti,
+                Ordre = ordre
+            };
+            await _context.HistoriqueOrdres.AddAsync(historique);
+        }
     }
 }

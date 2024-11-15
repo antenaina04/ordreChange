@@ -27,7 +27,6 @@ namespace ordreChange.Services.Implementations
             var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
             return montant * taux;
         }
-
         public async Task<Ordre?> GetOrdreByIdAsync(int id)
         {
             return await _unitOfWork.Ordres.GetByIdAsync(id);
@@ -83,7 +82,6 @@ namespace ordreChange.Services.Implementations
 
             return ordre;
         }
-        /* UPDATE STATUS ORDRE */
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
         {
             var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
@@ -147,21 +145,13 @@ namespace ordreChange.Services.Implementations
                     action = "Annulation";
                     break;
             }
-            ordre.Statut = statut;
-            ordre.DateDerniereModification = DateTime.UtcNow;
-            _unitOfWork.Ordres.Update(ordre);
+            bool modificationRéussie = await _unitOfWork.Ordres.UpdateStatutOrdreAsync(ordreId, statut);
+            if (!modificationRéussie)
+                return false;
 
-            var historique = new HistoriqueOrdre
-            {
-                Date = DateTime.UtcNow,
-                Statut = ordre.Statut,
-                Action = action,
-                Montant = ordre.MontantConverti,
-                Ordre = ordre
-            };
-            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+            //HISTORISATION_ACTION
+            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, action);
 
-            // Appliquer les changements
             await _unitOfWork.CompleteAsync();
             return true;
         }
@@ -171,90 +161,25 @@ namespace ordreChange.Services.Implementations
             if (agent == null || agent.Role != Role.Validateur)
                 throw new InvalidOperationException("L'agent n'est pas autorisé à valider des ordres.");
 
-            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
-            if (ordre == null || ordre.Statut != "En attente")
+            bool validationRéussie = await _unitOfWork.Ordres.ValiderOrdreAsync(ordreId);
+            if (!validationRéussie)
                 return false;
 
-            ordre.Statut = "Validé";
-            ordre.DateDerniereModification = DateTime.UtcNow;
-            _unitOfWork.Ordres.Update(ordre);
+            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
 
-            var historique = new HistoriqueOrdre
-            {
-                Date = DateTime.UtcNow,
-                Statut = ordre.Statut,
-                Action = "Validation",
-                Montant = ordre.MontantConverti,
-                Ordre = ordre
-            };
-            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+            //HISTORISATION_ACTION
+            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, "Validation");
 
-            // Appliquer les changements
             await _unitOfWork.CompleteAsync();
             return true;
         }
-        /*
-        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, Ordre ordreModifications)
-        {
-            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
-
-            // Vérification si l'ordre existe
-            if (ordreExistant == null)
-                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
-
-            // Vérifier que l'utilisateur est le créateur de l'ordre
-            if (ordreExistant.IdAgent != agentId)
-                throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à modifier");
-
-            // Vérification si l'ordre est déjà validé
-            if (ordreExistant.Statut == "Validé")
-                throw new InvalidOperationException("Ordre déjà validé et ne peut plus être modifié");
-
-            double montantConverti = ConvertirMontantViaMatrice(ordreModifications.Montant, ordreModifications.Devise, ordreModifications.DeviseCible); // Matrice
-                                                                                                                                                        //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(ordreModifications.Montant, ordreModifications.Devise, ordreModifications.DeviseCible); // API Externe
-
-            // Appliquer les modifications
-            ordreExistant.Montant = ordreModifications.Montant;
-            ordreExistant.Devise = ordreModifications.Devise;
-            ordreExistant.Statut = "En attente";
-            ordreExistant.DeviseCible = ordreModifications.DeviseCible;
-            ordreExistant.TypeTransaction = ordreModifications.TypeTransaction;
-            ordreExistant.MontantConverti = (float)montantConverti;
-            ordreExistant.DateDerniereModification = DateTime.UtcNow;
-
-            _unitOfWork.Ordres.Update(ordreExistant);
-
-
-            // Ajouter un nouvel historique d'ordre pour cette modification
-            var historique = new HistoriqueOrdre
-            {
-                Date = DateTime.UtcNow,
-                Statut = ordreExistant.Statut,
-                Montant = ordreExistant.MontantConverti,
-                Ordre = ordreExistant
-            };
-            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
-
-            await _unitOfWork.CompleteAsync();
-
-            return true;
-        }
-        */
         public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null || agent.Role != Role.Validateur)
                 throw new InvalidOperationException("Un agent non validateur n'est pas autorisé à voir les statistiques des ordres");
 
-            var ordres = await _unitOfWork.Ordres.GetAllAsync();
-            var counts = ordres
-                .GroupBy(o => o.Statut)
-                .Select(group => new
-                {
-                    Statut = group.Key,
-                    Count = group.Count()
-                })
-                .ToDictionary(g => g.Statut, g => g.Count);
+            var counts = await _unitOfWork.Ordres.GetStatutCountsAsync();
 
             var allStatusCounts = new Dictionary<string, int>
             {
@@ -266,7 +191,6 @@ namespace ordreChange.Services.Implementations
 
             return allStatusCounts;
         }
-
         public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
         {
             return await _unitOfWork.Ordres.GetHistoriqueByOrdreIdAsync(ordreId);
