@@ -1,13 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 
 namespace ordreChange.Models
 {
-    public enum Role
-    {
-        Acheteur,
-        Validateur
-    }
+    //public enum Role
+    //{
+    //    Acheteur,
+    //    Validateur
+    //}
 
     public class Agent
     {
@@ -25,9 +26,9 @@ namespace ordreChange.Models
         [Required]
         public required string PasswordHash { get; set; } // Hashed PASSWORD
 
-
-        [Required]
-        public Role Role { get; set; }
+        public int RoleId { get; set; }
+        [ForeignKey("RoleId")]
+        public Role Role { get; set; } = null!;
 
         public ICollection<Ordre>? Ordres { get; set; }
     }

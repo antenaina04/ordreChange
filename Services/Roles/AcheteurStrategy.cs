@@ -4,15 +4,24 @@ namespace ordreChange.Services.Roles
 {
     public class AcheteurStrategy : IRoleStrategy
     {
-        public Task<bool> CanExecuteActionAsync(Ordre ordre, int agentId, string action)
+        public Task ValidateActionAsync(Ordre? ordre, int agentId, string action)
         {
-            if (action == "Modifier" && ordre.IdAgent != agentId)
-                throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à le modifier.");
+            if (action == "Création")
+            {
+                // Les acheteurs peuvent toujours créer un ordre
+                return Task.CompletedTask;
+            }
 
-            if (ordre.Statut == "Validé")
-                throw new InvalidOperationException("L'ordre est déjà validé et ne peut plus être modifié.");
+            if (action == "Modification")
+            {
+                if (ordre == null || ordre.IdAgent != agentId)
+                    throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à le modifier.");
+                if (ordre.Statut == "Validé")
+                    throw new InvalidOperationException("Ordre déjà validé, modification non autorisée.");
+                return Task.CompletedTask;
+            }
 
-            return Task.FromResult(true);
+            throw new InvalidOperationException($"Action '{action}' non autorisée pour le rôle Acheteur.");
         }
     }
 }

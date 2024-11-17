@@ -28,7 +28,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible);
+                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible, dto.Action);
                 return CreatedAtAction(nameof(GetOrdre), new { id = ordre.IdOrdre }, new OrdreDto
                 {
                     IdOrdre = ordre.IdOrdre,
@@ -106,7 +106,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                var result = await _ordreService.ValiderOrdreAsync(id, agentId);
+                var result = await _ordreService.ValiderOrdreAsync(id, agentId, "Validation");
                 if (!result)
                     return BadRequest("L'ordre ne peut pas être validé.");
 
@@ -144,8 +144,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                // On envoie directement les informations de modification au service
-                var result = await _ordreService.ModifierOrdreAsync(id, agentId, dto);
+                var result = await _ordreService.ModifierOrdreAsync(id, agentId, dto, "Modification");
 
                 if (!result)
                     return BadRequest("L'ordre ne peut pas être modifié.");
@@ -214,6 +213,7 @@ namespace ordreChange.Controllers
         public required float Montant { get; set; }
         public required string Devise { get; set; }
         public required string DeviseCible { get; set; }
+        public required string Action { get; set; }
     }
     public class ModifierOrdreDto
     {

@@ -4,12 +4,23 @@ namespace ordreChange.Services.Roles
 {
     public class ValidateurStrategy : IRoleStrategy
     {
-        public Task<bool> CanExecuteActionAsync(Ordre ordre, int agentId, string action)
+        public Task ValidateActionAsync(Ordre? ordre, int agentId, string action)
         {
-            if (action == "Valider" && ordre.Statut != "En attente")
-                throw new InvalidOperationException("Seuls les ordres en attente peuvent être validés.");
+            if (action == "Validation")
+            {
+                if (ordre == null || ordre.Statut != "En attente")
+                    throw new InvalidOperationException("Seuls les ordres en attente peuvent être validés.");
+                return Task.CompletedTask;
+            }
 
-            return Task.FromResult(true);
+            if (action == "Refus")
+            {
+                if (ordre == null || ordre.Statut != "En attente")
+                    throw new InvalidOperationException("Seuls les ordres en attente peuvent être refusés.");
+                return Task.CompletedTask;
+            }
+
+            throw new InvalidOperationException($"Action '{action}' non autorisée pour le rôle Validateur.");
         }
     }
 }

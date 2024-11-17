@@ -6,6 +6,8 @@ using ordreChange.Services.Helpers;
 using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
 using System.Reflection.Metadata;
+using ordreChange.Services.Roles;
+using System;
 
 namespace ordreChange.Services.Implementations
 {
@@ -14,12 +16,21 @@ namespace ordreChange.Services.Implementations
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITauxChangeService _tauxChangeService;
         private readonly CurrencyExchangeService _currencyExchangeService;
+        private readonly RoleStrategyContext _roleStrategyContext;
 
-        public OrdreService(IUnitOfWork unitOfWork, ITauxChangeService tauxChangeService, CurrencyExchangeService currencyExchangeService)
+        public OrdreService(
+            IUnitOfWork unitOfWork,
+            ITauxChangeService tauxChangeService,
+            CurrencyExchangeService currencyExchangeService,
+            RoleStrategyContext roleStrategyContext)
         {
             _unitOfWork = unitOfWork;
             _tauxChangeService = tauxChangeService;
             _currencyExchangeService = currencyExchangeService;
+            _roleStrategyContext = new RoleStrategyContext();
+
+            _roleStrategyContext.RegisterStrategy("Acheteur", new AcheteurStrategy());
+            _roleStrategyContext.RegisterStrategy("Validateur", new ValidateurStrategy());
         }
 
         public double ConvertirMontantViaMatrice(double montant, string deviseSource, string deviseCible)
@@ -44,11 +55,13 @@ namespace ordreChange.Services.Implementations
             return montant * (double)taux;
         }
         */
-        public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
+        public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible, string action)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null || agent.Role != Role.Acheteur)
-                throw new InvalidOperationException("Agent non valide ou non autorisé à créer un ordre.");
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable");
+
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, action);
 
             double montantConverti = ConvertirMontantViaMatrice(montant, devise, deviseCible); // Matrice
             //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(montant, devise, deviseCible); // API Externe
@@ -82,18 +95,48 @@ namespace ordreChange.Services.Implementations
 
             return ordre;
         }
-        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
+
+        public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId, string action)
+        {
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+                throw new InvalidOperationException("L'agent est introuvable.");
+
+            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
+            if (ordre == null)
+                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
+
+            // Validate ordre
+            bool validationRéussie = await _unitOfWork.Ordres.ValiderOrdreAsync(ordreId);
+            if (!validationRéussie)
+                return false;
+
+            // Update ordre information
+            ordre.Statut = "Validé";
+            ordre.DateDerniereModification = DateTime.UtcNow;
+
+            // Action History
+            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, action);
+
+            // Execute transaction
+            await _unitOfWork.CompleteAsync();
+
+            return true;
+        }
+        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto, string action)
         {
             var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
 
             if (ordreExistant == null)
                 throw new InvalidOperationException("L'ordre spécifié est introuvable.");
 
-            if (ordreExistant.IdAgent != agentId)
-                throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à le modifier.");
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable.");
 
-            if (ordreExistant.Statut == "Validé")
-                throw new InvalidOperationException("Ordre déjà validé et ne peut plus être modifié.");
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordreExistant, agentId, action);
 
             double montantConverti = ConvertirMontantViaMatrice(dto.Montant, dto.Devise, dto.DeviseCible);
 
@@ -124,72 +167,60 @@ namespace ordreChange.Services.Implementations
         }
         public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string statut)
         {
-            string action = "erreur";
-
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId)
-                ?? throw new InvalidOperationException("L'utilisateur n'est pas trouvé pour faire l'action");
-
             var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
-            if (ordre == null) return false;
+            if (ordre == null)
+                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
 
-            switch (statut)
-            {
-                case "A modifier" when agent.Role != Role.Validateur:
-                    throw new InvalidOperationException("Seul un validateur peut effectuer cette action");
-                case "Annulé" when agentId != ordre.IdAgent:
-                    throw new InvalidOperationException("Seul le créateur de cet ordre peut annuler cet ordre");
-                case "A modifier":
-                    action = "Refus";
-                    break;
-                case "Annulé":
-                    action = "Annulation";
-                    break;
-            }
-            bool modificationRéussie = await _unitOfWork.Ordres.UpdateStatutOrdreAsync(ordreId, statut);
-            if (!modificationRéussie)
-                return false;
-
-            //HISTORISATION_ACTION
-            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, action);
-
-            await _unitOfWork.CompleteAsync();
-            return true;
-        }
-        public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
-        {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null || agent.Role != Role.Validateur)
-                throw new InvalidOperationException("L'agent n'est pas autorisé à valider des ordres.");
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable.");
 
-            bool validationRéussie = await _unitOfWork.Ordres.ValiderOrdreAsync(ordreId);
-            if (!validationRéussie)
-                return false;
+            string action = statut switch
+            {
+                "A modifier" => "Refus",
+                "Annulé" => "Annulation",
+                "Valider" => "Validation",
+                _ => throw new InvalidOperationException($"Statut '{statut}' non pris en charge.")
+            };
 
-            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
 
-            //HISTORISATION_ACTION
-            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, "Validation");
+            ordre.Statut = statut;
+            ordre.DateDerniereModification = DateTime.UtcNow;
+            _unitOfWork.Ordres.Update(ordre);
 
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = statut,
+                Action = action,
+                Montant = ordre.MontantConverti,
+                Ordre = ordre
+            };
+
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
             await _unitOfWork.CompleteAsync();
+
             return true;
         }
+
         public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null || agent.Role != Role.Validateur)
-                throw new InvalidOperationException("Un agent non validateur n'est pas autorisé à voir les statistiques des ordres");
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable.");
+
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "Stats");
 
             var counts = await _unitOfWork.Ordres.GetStatutCountsAsync();
 
-            var allStatusCounts = new Dictionary<string, int>
+            return new Dictionary<string, int>
             {
                 { "En attente", counts.GetValueOrDefault("En attente", 0) },
                 { "A modifier", counts.GetValueOrDefault("A modifier", 0) },
                 { "Annulé", counts.GetValueOrDefault("Annulé", 0) },
                 { "Validé", counts.GetValueOrDefault("Validé", 0) }
             };
-
-            return allStatusCounts;
         }
         public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
         {

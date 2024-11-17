@@ -4,6 +4,6 @@ namespace ordreChange.Services.Roles
 {
     public interface IRoleStrategy
     {
-        Task<bool> CanExecuteActionAsync(Ordre ordre, int agentId, string action);
+        Task ValidateActionAsync(Ordre? ordre, int agentId, string action);
     }
 }

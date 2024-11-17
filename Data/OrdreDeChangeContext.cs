@@ -16,6 +16,12 @@ namespace ordreChange.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            // Configuration for Role
+            modelBuilder.Entity<Role>()
+                .HasData(
+                    new Role { Id = 1, Name = "Acheteur" },
+                    new Role { Id = 2, Name = "Validateur" }
+                );
 
             // Configuration pour Agent
             modelBuilder.Entity<Agent>()
@@ -32,9 +38,12 @@ namespace ordreChange.Data
                 .Property(a => a.PasswordHash)
                 .IsRequired();
 
+            // Configuration for Agent
             modelBuilder.Entity<Agent>()
-                .Property(a => a.Role)
-                .IsRequired();
+                .HasOne(a => a.Role)
+                .WithMany()
+                .HasForeignKey(a => a.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Configuration pour Ordre
             modelBuilder.Entity<Ordre>()
