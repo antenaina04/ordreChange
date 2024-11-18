@@ -11,5 +11,8 @@ namespace ordreChange.Repositories.Interfaces
         Task<bool> ValiderOrdreAsync(int ordreId);
         Task<bool> UpdateStatutOrdreAsync(int ordreId, string statut);
         Task AjouterHistoriqueAsync(Ordre ordre, string action);
+        Task<Ordre?> GetOrdreWithHistoriqueByIdAsync(int ordreId);
+        Task<List<Ordre>> GetAllOrdresWithHistoriqueAsync();
+
     }
 }

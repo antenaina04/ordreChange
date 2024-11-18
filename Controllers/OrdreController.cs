@@ -177,7 +177,7 @@ namespace ordreChange.Controllers
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             var historique = await _ordreService.GetHistoriqueByOrdreIdAsync(agentId, id);
-            if (historique == null || historique.Count == 0)
+            if (historique == null)
                 return NotFound("Aucun historique trouvé pour cet ordre.");
 
             return Ok(historique);
@@ -202,7 +202,6 @@ namespace ordreChange.Controllers
                 TypeTransaction = o.TypeTransaction,
                 DateCreation = o.DateCreation,
                 MontantConverti = o.MontantConverti,
-                //IdAgent = o.IdAgent,
                 Agent = new AgentDto
                 {
                     IdAgent = o.Agent.IdAgent,
@@ -230,14 +229,5 @@ namespace ordreChange.Controllers
         public required string Devise { get; set; }
         public required string DeviseCible { get; set; }
         public required string TypeTransaction { get; set; }
-    }
-    public class HistoriqueOrdreDto
-    {
-        public int IdHistorique { get; set; }
-        public DateTime Date { get; set; }
-        public string? Statut { get; set; }
-        public string? Action { get; set; }
-        public float Montant { get; set; }
-        public int IdOrdre { get; set; }
     }
 }

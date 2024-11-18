@@ -103,7 +103,6 @@ namespace ordreChange.Services.Implementations
 
             return ordre;
         }
-
         public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
         {
             _action = "Validation";
@@ -213,7 +212,6 @@ namespace ordreChange.Services.Implementations
 
             return true;
         }
-
         public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
@@ -232,15 +230,45 @@ namespace ordreChange.Services.Implementations
                 { "Validé", counts.GetValueOrDefault("Validé", 0) }
             };
         }
-        public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int agentId, int ordreId)
+        public async Task<HistoriqueDto?> GetHistoriqueByOrdreIdAsync(int agentId, int ordreId)
         {
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable.");
-            
+
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "History");
 
-            return await _unitOfWork.Ordres.GetHistoriqueByOrdreIdAsync(ordreId);
+            // Récupérer l'ordre et ses historiques depuis le repository
+            var ordre = await _unitOfWork.Ordres.GetOrdreWithHistoriqueByIdAsync(ordreId);
+            if (ordre == null)
+                throw new InvalidOperationException("Ordre introuvable.");
+
+            // Mapper les données en DTO
+            return new HistoriqueDto
+            {
+                IdOrdre = ordre.IdOrdre,
+                Montant = ordre.Montant,
+                Devise = ordre.Devise,
+                DeviseCible = ordre.DeviseCible,
+                Statut = ordre.Statut,
+                TypeTransaction = ordre.TypeTransaction,
+                DateCreation = ordre.DateCreation,
+                MontantConverti = ordre.MontantConverti,
+                Agent = new AgentDto
+                {
+                    IdAgent = ordre.Agent.IdAgent,
+                    Nom = ordre.Agent.Nom,
+                    RoleName = ordre.Agent.Role?.Name
+                },
+                HistoriqueOrdres = ordre.HistoriqueOrdres.Select(h => new HistoriqueOrdreDto
+                {
+                    IdHistorique = h.IdHistorique,
+                    Date = h.Date,
+                    Statut = h.Statut,
+                    Action = h.Action,
+                    Montant = h.Montant
+                }).ToList()
+            };
         }
         public async Task<List<Ordre>> GetOrdresByStatutAsync(int agentId, string statut)
         {

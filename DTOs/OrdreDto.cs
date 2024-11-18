@@ -13,7 +13,6 @@ namespace OrdreChange.Dtos
         public string? TypeTransaction { get; set; }
         public DateTime DateCreation { get; set; }
         public float MontantConverti { get; set; }
-        //public int IdAgent { get; set; }
         public AgentDto? Agent { get; set; } = null!;
     }
 
@@ -36,5 +35,18 @@ namespace OrdreChange.Dtos
         public DateTime DateCreation { get; set; }
         public float? MontantConverti { get; set; }
         public AgentDto? Agent { get; set; } = null!;
+    }
+    public class HistoriqueDto
+    {
+        public int IdOrdre { get; set; }
+        public float Montant { get; set; }
+        public string? Devise { get; set; }
+        public string? DeviseCible { get; set; }
+        public string? Statut { get; set; }
+        public string? TypeTransaction { get; set; }
+        public DateTime DateCreation { get; set; }
+        public float MontantConverti { get; set; }
+        public AgentDto? Agent { get; set; } = null!;
+        public List<HistoriqueOrdreDto>? HistoriqueOrdres { get; set; } = null!;
     }
 }

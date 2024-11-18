@@ -23,9 +23,10 @@ namespace ordreChange.Repositories.Implementations
         }
 
         public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
-        {
+        {   
             return await _context.HistoriqueOrdres
                 .Where(h => h.IdOrdre == ordreId)
+                .Include(h => h.Ordre) // modif : inclusion de l'objet Ordre
                 .OrderBy(h => h.Date)
                 .ToListAsync();
         }
@@ -80,5 +81,25 @@ namespace ordreChange.Repositories.Implementations
             };
             await _context.HistoriqueOrdres.AddAsync(historique);
         }
+
+        public async Task<Ordre?> GetOrdreWithHistoriqueByIdAsync(int ordreId)
+        {
+            return await _context.Ordres
+                .Include(o => o.HistoriqueOrdres) // Charger les historiques
+                .Include(o => o.Agent) // Charger l'agent
+                .ThenInclude(a => a.Role) // Charger le rôle de l'agent
+                .FirstOrDefaultAsync(o => o.IdOrdre == ordreId);
+        }
+
+        public async Task<List<Ordre>> GetAllOrdresWithHistoriqueAsync()
+        {
+            return await _context.Ordres
+                .Include(o => o.HistoriqueOrdres)
+                .Include(o => o.Agent)
+                .ThenInclude(a => a.Role)
+                .ToListAsync();
+        }
+
+
     }
 }
