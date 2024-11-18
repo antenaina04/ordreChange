@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ordreChange.DTOs;
 using ordreChange.Models;
 using ordreChange.Services.Interfaces;
+using OrdreChange.Dtos;
 using System.Security.Claims;
 
 namespace ordreChange.Controllers
@@ -28,25 +30,27 @@ namespace ordreChange.Controllers
 
             try
             {
-                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible, dto.Action);
-                return CreatedAtAction(nameof(GetOrdre), new { id = ordre.IdOrdre }, new OrdreDto
+                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible);
+
+                var response = new OrdreResponseDto
                 {
                     IdOrdre = ordre.IdOrdre,
                     Montant = ordre.Montant,
                     Devise = ordre.Devise,
+                    DeviseCible = ordre.DeviseCible,
                     Statut = ordre.Statut,
                     TypeTransaction = ordre.TypeTransaction,
                     DateCreation = ordre.DateCreation,
-                    DeviseCible = ordre.DeviseCible,
                     MontantConverti = ordre.MontantConverti,
-                    IdAgent = ordre.IdAgent,
                     Agent = new AgentDto
                     {
                         IdAgent = ordre.Agent.IdAgent,
                         Nom = ordre.Agent.Nom,
-                        Role = ordre.Agent.Role
+                        RoleName = ordre.Agent.Role.Name
                     }
-                });
+                };
+
+                return CreatedAtAction(nameof(CreerOrdre), new { id = response.IdOrdre }, response);
             }
             catch (InvalidOperationException ex)
             {
@@ -65,16 +69,17 @@ namespace ordreChange.Controllers
                 IdOrdre = ordre.IdOrdre,
                 Montant = ordre.Montant,
                 Devise = ordre.Devise,
+                DeviseCible = ordre.DeviseCible,
                 Statut = ordre.Statut,
                 TypeTransaction = ordre.TypeTransaction,
                 DateCreation = ordre.DateCreation,
                 MontantConverti = ordre.MontantConverti,
-                IdAgent = ordre.IdAgent,
+                //IdAgent = ordre.IdAgent,
                 Agent = new AgentDto
                 {
-                    IdAgent = ordre.Agent.IdAgent,
+                    IdAgent = ordre.IdAgent,
                     Nom = ordre.Agent.Nom,
-                    Role = ordre.Agent.Role
+                    RoleName = ordre.Agent.Role.Name
                 }
             });
         }
@@ -106,7 +111,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                var result = await _ordreService.ValiderOrdreAsync(id, agentId, "Validation");
+                var result = await _ordreService.ValiderOrdreAsync(id, agentId);
                 if (!result)
                     return BadRequest("L'ordre ne peut pas être validé.");
 
@@ -144,7 +149,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                var result = await _ordreService.ModifierOrdreAsync(id, agentId, dto, "Modification");
+                var result = await _ordreService.ModifierOrdreAsync(id, agentId, dto);
 
                 if (!result)
                     return BadRequest("L'ordre ne peut pas être modifié.");
@@ -188,16 +193,17 @@ namespace ordreChange.Controllers
                 IdOrdre = o.IdOrdre,
                 Montant = o.Montant,
                 Devise = o.Devise,
+                DeviseCible = o.DeviseCible,
                 Statut = o.Statut,
                 TypeTransaction = o.TypeTransaction,
                 DateCreation = o.DateCreation,
                 MontantConverti = o.MontantConverti,
-                IdAgent = o.IdAgent,
+                //IdAgent = o.IdAgent,
                 Agent = new AgentDto
                 {
                     IdAgent = o.Agent.IdAgent,
                     Nom = o.Agent.Nom,
-                    Role = o.Agent.Role
+                    RoleName = o.Agent.Role.Name
                 }
             }).ToList();
 
@@ -207,14 +213,13 @@ namespace ordreChange.Controllers
     }
 
     // DTO pour création ordre
-    public class CreerOrdreDto
-    {
-        public required string TypeTransaction { get; set; }
-        public required float Montant { get; set; }
-        public required string Devise { get; set; }
-        public required string DeviseCible { get; set; }
-        public required string Action { get; set; }
-    }
+    //public class CreerOrdreDto
+    //{
+    //    public required string TypeTransaction { get; set; }
+    //    public required float Montant { get; set; }
+    //    public required string Devise { get; set; }
+    //    public required string DeviseCible { get; set; }
+    //}
     public class ModifierOrdreDto
     {
         public required float Montant { get; set; }

@@ -27,7 +27,7 @@ namespace ordreChange.Services.Implementations
             /*
             // Utilisation PWD déjà crypté dans la base de données
             if (agent == null || !VerifyPasswordHash(password, agent.PasswordHash))
-                return null;
+                return null;    
             */
             if (agent == null)
                 return null;
@@ -66,10 +66,15 @@ namespace ordreChange.Services.Implementations
             var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secureKey));
             var creds = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
+            if (agent.Role == null)
+            {
+                throw new InvalidOperationException("Le rôle de l'agent n'est pas chargé.");
+            }
+
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, agent.IdAgent.ToString()),
-                new Claim(ClaimTypes.Role, agent.Role.ToString()),
+                new Claim(ClaimTypes.Role, agent.Role.Name),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()) // Date d'émission
             };

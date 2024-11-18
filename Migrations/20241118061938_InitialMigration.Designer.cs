@@ -12,8 +12,8 @@ using ordreChange.Data;
 namespace ordreChange.Migrations
 {
     [DbContext(typeof(OrdreDeChangeContext))]
-    [Migration("20241112194447_deviseCibleInOrdreFields")]
-    partial class deviseCibleInOrdreFields
+    [Migration("20241118061938_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -42,7 +42,7 @@ namespace ordreChange.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Role")
+                    b.Property<int>("RoleId")
                         .HasColumnType("int");
 
                     b.Property<string>("Username")
@@ -51,6 +51,8 @@ namespace ordreChange.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("IdAgent");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("Agents");
                 });
@@ -62,6 +64,11 @@ namespace ordreChange.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdHistorique"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
@@ -134,6 +141,47 @@ namespace ordreChange.Migrations
                     b.ToTable("Ordres");
                 });
 
+            modelBuilder.Entity("ordreChange.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Role");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Acheteur"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Validateur"
+                        });
+                });
+
+            modelBuilder.Entity("ordreChange.Models.Agent", b =>
+                {
+                    b.HasOne("ordreChange.Models.Role", "Role")
+                        .WithMany("Agents")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("ordreChange.Models.HistoriqueOrdre", b =>
                 {
                     b.HasOne("ordreChange.Models.Ordre", "Ordre")
@@ -164,6 +212,11 @@ namespace ordreChange.Migrations
             modelBuilder.Entity("ordreChange.Models.Ordre", b =>
                 {
                     b.Navigation("HistoriqueOrdres");
+                });
+
+            modelBuilder.Entity("ordreChange.Models.Role", b =>
+                {
+                    b.Navigation("Agents");
                 });
 #pragma warning restore 612, 618
         }

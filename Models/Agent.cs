@@ -26,6 +26,7 @@ namespace ordreChange.Models
         [Required]
         public required string PasswordHash { get; set; } // Hashed PASSWORD
 
+        [Required]
         public int RoleId { get; set; }
         [ForeignKey("RoleId")]
         public Role Role { get; set; } = null!;

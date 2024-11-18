@@ -1,0 +1,10 @@
+#dotnet CLI
+
+-- Supprimer les migrations incorrectes
+dotnet ef migrations remove
+
+-- Générer une nouvelle migration : dotnet ef migrations add <migration_name>
+dotnet ef migrations add ajoutTableRole
+
+-- Appliquer les migrations
+dotnet ef database update

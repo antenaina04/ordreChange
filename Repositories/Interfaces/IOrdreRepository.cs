@@ -4,6 +4,7 @@ namespace ordreChange.Repositories.Interfaces
 {
     public interface IOrdreRepository : IRepository<Ordre>
     {
+        Task<Ordre?> GetOrdreByIdAsync(int id);
         Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId);
         Task<List<Ordre>> GetOrdresByStatutAsync(string statut);
         Task<Dictionary<string, int>> GetStatutCountsAsync();

@@ -10,6 +10,7 @@ using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Implementations;
 using ordreChange.Services.Interfaces;
+using ordreChange.Services.Roles;
 using ordreChange.UnitOfWork;
 using ordreChange.Utilities;
 
@@ -64,6 +65,10 @@ builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
 // Configuration du CurrencyExchangeService
 builder.Services.AddHttpClient<CurrencyExchangeService>();
 builder.Services.AddScoped<CurrencyExchangeService>();
+
+builder.Services.AddScoped<RoleStrategyContext>();
+builder.Services.AddScoped<IRoleStrategy, AcheteurStrategy>();
+builder.Services.AddScoped<IRoleStrategy, ValidateurStrategy>();
 
 // Dependency Injection
 builder.Services.AddScoped<IAgentRepository, AgentRepository>();

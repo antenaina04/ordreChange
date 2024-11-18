@@ -10,10 +10,18 @@ namespace ordreChange.Repositories.Implementations
         public OrdreRepository(OrdreDeChangeContext context) : base(context)
         {
         }
-        public async Task<List<Ordre>> GetAllAsync()
+        public new async Task<List<Ordre>> GetAllAsync()
         {
             return await _context.Ordres.ToListAsync();
         }
+        public async Task<Ordre?> GetOrdreByIdAsync(int id)
+        {
+            return await _context.Ordres
+                .Include(o => o.Agent)
+                .ThenInclude(a => a.Role)
+                .FirstOrDefaultAsync(o => o.IdOrdre == id);
+        }
+
         public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
         {
             return await _context.HistoriqueOrdres
@@ -26,6 +34,7 @@ namespace ordreChange.Repositories.Implementations
             return await _context.Ordres
                 .Where(o => o.Statut == statut)
                 .Include(o => o.Agent)
+                .ThenInclude(a => a.Role)
                 .ToListAsync();
         }
         public async Task<Dictionary<string, int>> GetStatutCountsAsync()

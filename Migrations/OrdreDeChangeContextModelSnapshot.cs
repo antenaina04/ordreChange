@@ -39,7 +39,7 @@ namespace ordreChange.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Role")
+                    b.Property<int>("RoleId")
                         .HasColumnType("int");
 
                     b.Property<string>("Username")
@@ -48,6 +48,8 @@ namespace ordreChange.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("IdAgent");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("Agents");
                 });
@@ -136,6 +138,47 @@ namespace ordreChange.Migrations
                     b.ToTable("Ordres");
                 });
 
+            modelBuilder.Entity("ordreChange.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Role");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Acheteur"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Validateur"
+                        });
+                });
+
+            modelBuilder.Entity("ordreChange.Models.Agent", b =>
+                {
+                    b.HasOne("ordreChange.Models.Role", "Role")
+                        .WithMany("Agents")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("ordreChange.Models.HistoriqueOrdre", b =>
                 {
                     b.HasOne("ordreChange.Models.Ordre", "Ordre")
@@ -166,6 +209,11 @@ namespace ordreChange.Migrations
             modelBuilder.Entity("ordreChange.Models.Ordre", b =>
                 {
                     b.Navigation("HistoriqueOrdres");
+                });
+
+            modelBuilder.Entity("ordreChange.Models.Role", b =>
+                {
+                    b.Navigation("Agents");
                 });
 #pragma warning restore 612, 618
         }

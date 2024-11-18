@@ -8,6 +8,9 @@ using ordreChange.UnitOfWork;
 using System.Reflection.Metadata;
 using ordreChange.Services.Roles;
 using System;
+using ordreChange.Repositories.Interfaces;
+using OrdreChange.Dtos;
+using ordreChange.DTOs;
 
 namespace ordreChange.Services.Implementations
 {
@@ -17,17 +20,21 @@ namespace ordreChange.Services.Implementations
         private readonly ITauxChangeService _tauxChangeService;
         private readonly CurrencyExchangeService _currencyExchangeService;
         private readonly RoleStrategyContext _roleStrategyContext;
+        private readonly IAgentRepository _agentRepository;
+        private string _action;
 
         public OrdreService(
             IUnitOfWork unitOfWork,
             ITauxChangeService tauxChangeService,
             CurrencyExchangeService currencyExchangeService,
-            RoleStrategyContext roleStrategyContext)
+            RoleStrategyContext roleStrategyContext,
+            IAgentRepository agentRepository)
         {
             _unitOfWork = unitOfWork;
             _tauxChangeService = tauxChangeService;
             _currencyExchangeService = currencyExchangeService;
             _roleStrategyContext = new RoleStrategyContext();
+            _agentRepository = agentRepository;
 
             _roleStrategyContext.RegisterStrategy("Acheteur", new AcheteurStrategy());
             _roleStrategyContext.RegisterStrategy("Validateur", new ValidateurStrategy());
@@ -40,7 +47,7 @@ namespace ordreChange.Services.Implementations
         }
         public async Task<Ordre?> GetOrdreByIdAsync(int id)
         {
-            return await _unitOfWork.Ordres.GetByIdAsync(id);
+            return await _unitOfWork.Ordres.GetOrdreByIdAsync(id);
         }
         /*
         public async Task<double> ConvertirMontantViaExchangeRatesAPI(double montant, string deviseSource, string deviseCible)
@@ -55,13 +62,14 @@ namespace ordreChange.Services.Implementations
             return montant * (double)taux;
         }
         */
-        public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible, string action)
+        public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
         {
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            _action = "Création";
+            var agent = await _agentRepository.GetByIdAsync(agentId);
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable");
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, action);
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, _action);
 
             double montantConverti = ConvertirMontantViaMatrice(montant, devise, deviseCible); // Matrice
             //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(montant, devise, deviseCible); // API Externe
@@ -84,7 +92,7 @@ namespace ordreChange.Services.Implementations
             {
                 Date = DateTime.UtcNow,
                 Statut = ordre.Statut,
-                Action = "Création",
+                Action = _action,
                 Montant = ordre.MontantConverti,
                 Ordre = ordre
             };
@@ -96,8 +104,9 @@ namespace ordreChange.Services.Implementations
             return ordre;
         }
 
-        public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId, string action)
+        public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
         {
+            _action = "Validation";
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
                 throw new InvalidOperationException("L'agent est introuvable.");
@@ -106,7 +115,7 @@ namespace ordreChange.Services.Implementations
             if (ordre == null)
                 throw new InvalidOperationException("L'ordre spécifié est introuvable.");
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, _action);
 
             // Validate ordre
             bool validationRéussie = await _unitOfWork.Ordres.ValiderOrdreAsync(ordreId);
@@ -118,15 +127,16 @@ namespace ordreChange.Services.Implementations
             ordre.DateDerniereModification = DateTime.UtcNow;
 
             // Action History
-            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, action);
+            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, _action);
 
             // Execute transaction
             await _unitOfWork.CompleteAsync();
 
             return true;
         }
-        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto, string action)
+        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
         {
+            _action = "Modification";
             var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
 
             if (ordreExistant == null)
@@ -136,7 +146,7 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable.");
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordreExistant, agentId, action);
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordreExistant, agentId, _action);
 
             double montantConverti = ConvertirMontantViaMatrice(dto.Montant, dto.Devise, dto.DeviseCible);
 
@@ -155,7 +165,7 @@ namespace ordreChange.Services.Implementations
             {
                 Date = DateTime.UtcNow,
                 Statut = "En attente",
-                Action = "Modification",
+                Action = _action,
                 Montant = ordreExistant.MontantConverti,
                 Ordre = ordreExistant
             };

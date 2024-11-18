@@ -16,14 +16,25 @@ namespace ordreChange.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Configuration for Role
+            // TABLE : Role
+            modelBuilder.Entity<Role>()
+                .HasMany(r => r.Agents)
+                .WithOne(a => a.Role)
+                .HasForeignKey(a => a.RoleId)
+                .OnDelete(DeleteBehavior.Restrict); // Empêche la suppression en cascade
+
+            modelBuilder.Entity<Role>()
+                .Property(r => r.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
             modelBuilder.Entity<Role>()
                 .HasData(
                     new Role { Id = 1, Name = "Acheteur" },
                     new Role { Id = 2, Name = "Validateur" }
                 );
 
-            // Configuration pour Agent
+            // TABLE : Agent
             modelBuilder.Entity<Agent>()
                 .Property(a => a.Nom)
                 .IsRequired()
@@ -38,14 +49,14 @@ namespace ordreChange.Data
                 .Property(a => a.PasswordHash)
                 .IsRequired();
 
-            // Configuration for Agent
             modelBuilder.Entity<Agent>()
                 .HasOne(a => a.Role)
-                .WithMany()
+                .WithMany(r => r.Agents)
                 .HasForeignKey(a => a.RoleId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict); // ou .SetNull
 
-            // Configuration pour Ordre
+
+            // TABLE : Ordre
             modelBuilder.Entity<Ordre>()
                 .HasOne(o => o.Agent)
                 .WithMany(a => a.Ordres)
@@ -74,7 +85,7 @@ namespace ordreChange.Data
                 .Property(o => o.DateDerniereModification)
                 .IsRequired(false); // Configuration pour autoriser une valeur null
 
-            // Configuration pour HistoriqueOrdre
+            // TABLE : HistoriqueOrdre
             modelBuilder.Entity<HistoriqueOrdre>()
                 .HasOne(h => h.Ordre)
                 .WithMany(o => o.HistoriqueOrdres)
