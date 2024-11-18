@@ -232,12 +232,24 @@ namespace ordreChange.Services.Implementations
                 { "Validé", counts.GetValueOrDefault("Validé", 0) }
             };
         }
-        public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int ordreId)
+        public async Task<List<HistoriqueOrdre>> GetHistoriqueByOrdreIdAsync(int agentId, int ordreId)
         {
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable.");
+            
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "History");
+
             return await _unitOfWork.Ordres.GetHistoriqueByOrdreIdAsync(ordreId);
         }
-        public async Task<List<Ordre>> GetOrdresByStatutAsync(string statut)
+        public async Task<List<Ordre>> GetOrdresByStatutAsync(int agentId, string statut)
         {
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable.");
+
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "Statut");
+
             return await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
         }
     }

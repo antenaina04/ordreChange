@@ -174,7 +174,9 @@ namespace ordreChange.Controllers
         [HttpGet("{id}/historique")]
         public async Task<IActionResult> GetHistoriqueOrdre(int id)
         {
-            var historique = await _ordreService.GetHistoriqueByOrdreIdAsync(id);
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            var historique = await _ordreService.GetHistoriqueByOrdreIdAsync(agentId, id);
             if (historique == null || historique.Count == 0)
                 return NotFound("Aucun historique trouvé pour cet ordre.");
 
@@ -184,7 +186,9 @@ namespace ordreChange.Controllers
         [HttpGet("statut/{statut}")]
         public async Task<IActionResult> GetOrdresByStatut(string statut)
         {
-            var ordres = await _ordreService.GetOrdresByStatutAsync(statut);
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+            var ordres = await _ordreService.GetOrdresByStatutAsync(agentId, statut);
             if (ordres == null || ordres.Count == 0)
                 return NotFound($"Aucun ordre trouvé avec le statut '{statut}'.");
 

@@ -19,6 +19,10 @@ namespace ordreChange.Services.Roles
                     throw new InvalidOperationException("Seuls les ordres en attente peuvent être refusés.");
                 return Task.CompletedTask;
             }
+            if (action == "Stats" || action == "History" || action == "Statut")
+            {
+                return Task.CompletedTask;
+            }
 
             throw new InvalidOperationException($"Action '{action}' non autorisée pour le rôle Validateur.");
         }
