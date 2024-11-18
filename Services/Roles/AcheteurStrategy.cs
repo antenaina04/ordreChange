@@ -12,12 +12,12 @@ namespace ordreChange.Services.Roles
                 return Task.CompletedTask;
             }
 
-            if (action == "Modification")
+            if (action == "Modification" || action == "Annulation")
             {
                 if (ordre == null || ordre.IdAgent != agentId)
                     throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à le modifier.");
                 if (ordre.Statut == "Validé")
-                    throw new InvalidOperationException("Ordre déjà validé, modification non autorisée.");
+                    throw new InvalidOperationException("Ordre déjà validé, modification ou annulation non autorisée.");
                 return Task.CompletedTask;
             }
 
