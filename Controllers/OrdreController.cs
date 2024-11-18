@@ -214,20 +214,4 @@ namespace ordreChange.Controllers
         }
 
     }
-
-    // DTO pour création ordre
-    //public class CreerOrdreDto
-    //{
-    //    public required string TypeTransaction { get; set; }
-    //    public required float Montant { get; set; }
-    //    public required string Devise { get; set; }
-    //    public required string DeviseCible { get; set; }
-    //}
-    public class ModifierOrdreDto
-    {
-        public required float Montant { get; set; }
-        public required string Devise { get; set; }
-        public required string DeviseCible { get; set; }
-        public required string TypeTransaction { get; set; }
-    }
 }

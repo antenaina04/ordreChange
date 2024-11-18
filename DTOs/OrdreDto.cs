@@ -49,4 +49,11 @@ namespace OrdreChange.Dtos
         public AgentDto? Agent { get; set; } = null!;
         public List<HistoriqueOrdreDto>? HistoriqueOrdres { get; set; } = null!;
     }
+    public class ModifierOrdreDto
+    {
+        public required float Montant { get; set; }
+        public required string Devise { get; set; }
+        public required string DeviseCible { get; set; }
+        public required string TypeTransaction { get; set; }
+    }
 }
