@@ -40,4 +40,4 @@ namespace ordreChange.Services.Roles
             await strategy.ValidateActionAsync(ordre, agentId, action);
         }
     }
-}
+}                              

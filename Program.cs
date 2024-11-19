@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using ordreChange.Data;
 using ordreChange.Repositories.Implementations;
 using ordreChange.Repositories.Interfaces;
+using ordreChange.Services;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Implementations;
 using ordreChange.Services.Interfaces;
@@ -66,12 +67,37 @@ builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
 builder.Services.AddHttpClient<CurrencyExchangeService>();
 builder.Services.AddScoped<CurrencyExchangeService>();
 
-builder.Services.AddScoped<RoleStrategyContext>();
+/// <summary>
+/// Configures the dependency injection container to use the RoleStrategyContext
+/// and registers role-based strategies for handling role-specific logic.
+/// </summary>
+builder.Services.AddScoped<RoleStrategyContext>(provider =>
+{
+    // Create an instance of RoleStrategyContext
+    var context = new RoleStrategyContext();
+
+    /// <summary>
+    /// Registers strategies for handling logic based on specific roles.
+    /// Each strategy encapsulates the logic for a single role, allowing dynamic
+    /// selection of behavior based on the user's role.
+    /// </summary>
+    /// <remarks>
+    /// - "Acheteur" is registered with <see cref="AcheteurStrategy"/> to handle buyer-specific logic.
+    /// - "Validateur" is registered with <see cref="ValidateurStrategy"/> to handle validator-specific logic.
+    /// </remarks>
+    context.RegisterStrategy("Acheteur", new AcheteurStrategy());
+    context.RegisterStrategy("Validateur", new ValidateurStrategy());
+
+    // Return the fully configured context to the DI container
+    return context;
+});
+
 builder.Services.AddScoped<IRoleStrategy, AcheteurStrategy>();
 builder.Services.AddScoped<IRoleStrategy, ValidateurStrategy>();
 
 // Dependency Injection
 builder.Services.AddScoped<IAgentRepository, AgentRepository>();
+builder.Services.AddScoped<IAcheteurService, AcheteurService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITauxChangeService, TauxChangeService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
