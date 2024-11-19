@@ -3,6 +3,7 @@ using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Interfaces;
 using ordreChange.Services.Roles;
 using ordreChange.UnitOfWork;
+using OrdreChange.Dtos;
 
 namespace ordreChange.Services.Implementations
 {
@@ -81,6 +82,45 @@ namespace ordreChange.Services.Implementations
 
             await _unitOfWork.CompleteAsync();
             return ordre;
+        }
+
+        public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
+        {
+            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
+
+            if (ordreExistant == null)
+                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+                throw new InvalidOperationException("Agent introuvable.");
+
+            double montantConverti = ConvertirMontantViaMatrice(dto.Montant, dto.Devise, dto.DeviseCible);
+
+            // Appliquer les modifications
+            ordreExistant.Montant = dto.Montant;
+            ordreExistant.Devise = dto.Devise;
+            ordreExistant.Statut = "En attente";
+            ordreExistant.DeviseCible = dto.DeviseCible;
+            ordreExistant.TypeTransaction = dto.TypeTransaction;
+            ordreExistant.MontantConverti = (float)montantConverti;
+            ordreExistant.DateDerniereModification = DateTime.UtcNow;
+
+            _unitOfWork.Ordres.Update(ordreExistant);
+
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = "En attente",
+                Action = "Modification",
+                Montant = ordreExistant.MontantConverti,
+                Ordre = ordreExistant
+            };
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+
+            await _unitOfWork.CompleteAsync();
+
+            return true;
         }
     }
 }

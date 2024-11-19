@@ -81,48 +81,11 @@ namespace ordreChange.Services.Implementations
                 agent => _validateurService.ValiderOrdreAsync(ordreId, agentId)
             );
         }
-
-
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
         {
-            _action = "Modification";
-            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
-
-            if (ordreExistant == null)
-                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
-
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null)
-                throw new InvalidOperationException("Agent introuvable.");
-
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordreExistant, agentId, _action);
-
-            double montantConverti = ConvertirMontantViaMatrice(dto.Montant, dto.Devise, dto.DeviseCible);
-
-            // Appliquer les modifications
-            ordreExistant.Montant = dto.Montant;
-            ordreExistant.Devise = dto.Devise;
-            ordreExistant.Statut = "En attente";
-            ordreExistant.DeviseCible = dto.DeviseCible;
-            ordreExistant.TypeTransaction = dto.TypeTransaction;
-            ordreExistant.MontantConverti = (float)montantConverti;
-            ordreExistant.DateDerniereModification = DateTime.UtcNow;
-
-            _unitOfWork.Ordres.Update(ordreExistant);
-
-            var historique = new HistoriqueOrdre
-            {
-                Date = DateTime.UtcNow,
-                Statut = "En attente",
-                Action = _action,
-                Montant = ordreExistant.MontantConverti,
-                Ordre = ordreExistant
-            };
-            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
-
-            await _unitOfWork.CompleteAsync();
-
-            return true;
+            return await _acheteurService.ValidateAndExecuteAsync<bool>(agentId, ordreId, "Modification",
+                agent => _acheteurService.ModifierOrdreAsync(ordreId, agentId, dto)
+            );
         }
         public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string statut)
         {
