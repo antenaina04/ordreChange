@@ -21,6 +21,12 @@ namespace ordreChange.Services.Roles
                 return Task.CompletedTask;
             }
 
+            if (action == "History")
+            {
+                if (ordre == null || ordre.IdAgent != agentId)
+                    throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé cette historique.");
+                return Task.CompletedTask;
+            }
             throw new InvalidOperationException($"Action '{action}' non autorisée pour le rôle Acheteur.");
         }
     }

@@ -137,12 +137,12 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable.");
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "History");
-
             // Récupérer l'ordre et ses historiques depuis le repository
             var ordre = await _unitOfWork.Ordres.GetOrdreWithHistoriqueByIdAsync(ordreId);
             if (ordre == null)
                 throw new InvalidOperationException("Ordre introuvable.");
+
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, "History");
 
             // Mapper les données en DTO
             return new HistoriqueDto
