@@ -19,6 +19,7 @@ namespace ordreChange.Services.Implementations
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITauxChangeService _tauxChangeService;
         private readonly CurrencyExchangeService _currencyExchangeService;
+        private readonly IAcheteurService _acheteurService;
         private readonly RoleStrategyContext _roleStrategyContext;
         private readonly IAgentRepository _agentRepository;
         private string _action;
@@ -26,6 +27,7 @@ namespace ordreChange.Services.Implementations
         public OrdreService(
             IUnitOfWork unitOfWork,
             ITauxChangeService tauxChangeService,
+            IAcheteurService acheteurService,
             CurrencyExchangeService currencyExchangeService,
             RoleStrategyContext roleStrategyContext,
             IAgentRepository agentRepository)
@@ -33,6 +35,7 @@ namespace ordreChange.Services.Implementations
             _unitOfWork = unitOfWork;
             _tauxChangeService = tauxChangeService;
             _currencyExchangeService = currencyExchangeService;
+            _acheteurService = acheteurService;
             _roleStrategyContext = new RoleStrategyContext();
             _agentRepository = agentRepository;
 
@@ -49,59 +52,25 @@ namespace ordreChange.Services.Implementations
         {
             return await _unitOfWork.Ordres.GetOrdreByIdAsync(id);
         }
-        /*
-        public async Task<double> ConvertirMontantViaExchangeRatesAPI(double montant, string deviseSource, string deviseCible)
-        {
-            var taux = await _currencyExchangeService.GetExchangeRateAsync(deviseSource, deviseCible);
 
-            if (taux == null)
-            {
-                throw new Exception("Erreur lors de la récuperation du taux de change par l'API externe");
-            }
-
-            return montant * (double)taux;
-        }
-        */
+        /// <summary>
+        /// Creates an order for a specific agent after validating the agent's permission to perform the action.
+        /// </summary>
+        /// <param name="agentId">The unique identifier of the agent creating the order.</param>
+        /// <param name="typeTransaction">The type of transaction (e.g., "buy" or "sell").</param>
+        /// <param name="montant">The amount involved in the transaction.</param>
+        /// <param name="devise">The currency of the transaction.</param>
+        /// <param name="deviseCible">The target currency for the transaction.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. 
+        /// The task result contains the created order of type <see cref="Ordre"/>.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">Thrown if the agent cannot be found or is not authorized to perform the action.</exception>
         public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
         {
-            _action = "Création";
-            var agent = await _agentRepository.GetByIdAsync(agentId);
-            if (agent == null)
-                throw new InvalidOperationException("Agent introuvable");
-
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, _action);
-
-            double montantConverti = ConvertirMontantViaMatrice(montant, devise, deviseCible); // Matrice
-            //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(montant, devise, deviseCible); // API Externe
-
-            var ordre = new Ordre
-            {
-                Montant = montant,
-                Devise = devise,
-                DeviseCible = deviseCible,
-                Statut = "En attente",
-                TypeTransaction = typeTransaction,
-                DateCreation = DateTime.UtcNow,
-                MontantConverti = (float)montantConverti,
-                Agent = agent
-            };
-
-            await _unitOfWork.Ordres.AddAsync(ordre);
-
-            var historique = new HistoriqueOrdre
-            {
-                Date = DateTime.UtcNow,
-                Statut = ordre.Statut,
-                Action = _action,
-                Montant = ordre.MontantConverti,
-                Ordre = ordre
-            };
-            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
-
-            // Appliquer changements
-            await _unitOfWork.CompleteAsync();
-
-            return ordre;
+            return await _acheteurService.ValidateAndExecuteAsync<Ordre>(agentId, "Création",
+                agent => _acheteurService.CreerOrdreAsync(agentId, typeTransaction, montant, devise, deviseCible)
+            );
         }
         public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
         {
@@ -133,6 +102,9 @@ namespace ordreChange.Services.Implementations
 
             return true;
         }
+
+
+
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
         {
             _action = "Modification";
