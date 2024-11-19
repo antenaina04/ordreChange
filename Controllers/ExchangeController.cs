@@ -16,21 +16,21 @@ namespace ordreChange.Controllers
         }
 
         // Endpoint GET_TAUX_DE_CHANGE_PAR_API_EXTERNE
-        [HttpGet("rate")]
-        public async Task<IActionResult> GetExchangeRate(string fromCurrency, string toCurrency)
-        {
-            if (string.IsNullOrWhiteSpace(fromCurrency) || string.IsNullOrWhiteSpace(toCurrency))
-            {
-                return BadRequest("Les codes devises sont requis");
-            }
+        //[HttpGet("rate")]
+        //public async Task<IActionResult> GetExchangeRate(string fromCurrency, string toCurrency)
+        //{
+        //    if (string.IsNullOrWhiteSpace(fromCurrency) || string.IsNullOrWhiteSpace(toCurrency))
+        //    {
+        //        return BadRequest("Les codes devises sont requis");
+        //    }
 
-            var rate = await _currencyExchangeService.GetExchangeRateAsync(fromCurrency, toCurrency);
-            if (rate == null)
-            {
-                return NotFound("Taux de change introuvable ou erreur de l'API externe");
-            }
+        //    var rate = await _currencyExchangeService.GetExchangeRateAsync(fromCurrency, toCurrency);
+        //    if (rate == null)
+        //    {
+        //        return NotFound("Taux de change introuvable ou erreur de l'API externe");
+        //    }
 
-            return Ok(new { FromCurrency = fromCurrency, ToCurrency = toCurrency, ExchangeRate = rate });
-        }
+        //    return Ok(new { FromCurrency = fromCurrency, ToCurrency = toCurrency, ExchangeRate = rate });
+        //}
     }
 }

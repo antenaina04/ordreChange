@@ -1,12 +1,15 @@
-﻿namespace ordreChange.Services.Implementations
+﻿using ordreChange.Services.Implementations;
+
+namespace ordreChange.Services.Helpers
 {
-    public class TauxChangeMatrix
+    public class MatrixExchangeRate
     {
-        private static readonly Lazy<TauxChangeMatrix> _instance = new(() => new TauxChangeMatrix());
+
+        private static readonly Lazy<MatrixExchangeRate> _instance = new(() => new MatrixExchangeRate());
         private readonly Dictionary<string, int> _deviseIndices;
         private readonly double[,] _tauxChange;
 
-        private TauxChangeMatrix()
+        private MatrixExchangeRate()
         {
             string[] devises = { "USD", "EUR", "CAD", "GBP", "MGA" };
             _deviseIndices = new Dictionary<string, int>();
@@ -17,7 +20,7 @@
             InitializeMatrice(devises);
         }
 
-        public static TauxChangeMatrix Instance => _instance.Value;
+        public static MatrixExchangeRate Instance => _instance.Value;
 
         private void InitializeMatrice(string[] devises)
         {

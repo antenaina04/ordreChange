@@ -1,15 +1,17 @@
 ﻿using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
+using ordreChange.Services.Helpers;
 using ordreChange.Services.Interfaces;
 using ordreChange.Services.Roles;
 using ordreChange.UnitOfWork;
 using OrdreChange.Dtos;
+using System.Reflection.Metadata;
 
 namespace ordreChange.Services.Implementations
 {
     public class AcheteurService : BaseRoleService, IAcheteurService
     {
-        private readonly ITauxChangeService _tauxChangeService;
+        private readonly CurrencyExchangeService _currencyExchangeService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAgentRepository _agentRepository;
 
@@ -17,32 +19,14 @@ namespace ordreChange.Services.Implementations
         public AcheteurService(
             IUnitOfWork unitOfWork,
             RoleStrategyContext roleStrategyContext,
-            ITauxChangeService tauxChangeService,
+            CurrencyExchangeService currencyExchangeService,
             IAgentRepository agentRepository)
             : base(unitOfWork, roleStrategyContext)
         {
             _unitOfWork = unitOfWork;
-            _tauxChangeService = tauxChangeService;
+            _currencyExchangeService = currencyExchangeService;
             _agentRepository = agentRepository;
         }
-        public double ConvertirMontantViaMatrice(double montant, string deviseSource, string deviseCible)
-        {
-            var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
-            return montant * taux;
-        }
-        /*
-        public async Task<double> ConvertirMontantViaExchangeRatesAPI(double montant, string deviseSource, string deviseCible)
-        {
-            var taux = await _currencyExchangeService.GetExchangeRateAsync(deviseSource, deviseCible);
-
-            if (taux == null)
-            {
-                throw new Exception("Erreur lors de la récuperation du taux de change par l'API externe");
-            }
-
-            return montant * (double)taux;
-        }
-        */
         public async Task<Ordre> CreerOrdreAsync(
             int agentId,
             string typeTransaction,
@@ -54,8 +38,7 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable");
 
-            double montantConverti = ConvertirMontantViaMatrice(montant, devise, deviseCible); // Matrice
-            //double montantConverti = await ConvertirMontantViaExchangeRatesAPI(montant, devise, deviseCible); // API Externe
+            double montantConverti = await _currencyExchangeService.CurrencyConversion(montant, devise, deviseCible);
 
             var ordre = new Ordre
             {
@@ -95,7 +78,7 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable.");
 
-            double montantConverti = ConvertirMontantViaMatrice(dto.Montant, dto.Devise, dto.DeviseCible);
+            double montantConverti = await _currencyExchangeService.CurrencyConversion(dto.Montant, dto.Devise, dto.DeviseCible);
 
             // Appliquer les modifications
             ordreExistant.Montant = dto.Montant;

@@ -100,7 +100,6 @@ builder.Services.AddScoped<IAgentRepository, AgentRepository>();
 builder.Services.AddScoped<IAcheteurService, AcheteurService>();
 builder.Services.AddScoped<IValidateurService, ValidateurService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITauxChangeService, TauxChangeService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IOrdreService, OrdreService>();
 

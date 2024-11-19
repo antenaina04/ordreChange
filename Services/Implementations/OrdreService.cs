@@ -17,7 +17,6 @@ namespace ordreChange.Services.Implementations
     public class OrdreService : IOrdreService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ITauxChangeService _tauxChangeService;
         private readonly CurrencyExchangeService _currencyExchangeService;
         private readonly IAcheteurService _acheteurService;
         private readonly IValidateurService _validateurService;
@@ -27,7 +26,6 @@ namespace ordreChange.Services.Implementations
 
         public OrdreService(
             IUnitOfWork unitOfWork,
-            ITauxChangeService tauxChangeService,
             IAcheteurService acheteurService,
             IValidateurService validateurService,
             CurrencyExchangeService currencyExchangeService,
@@ -35,7 +33,6 @@ namespace ordreChange.Services.Implementations
             IAgentRepository agentRepository)
         {
             _unitOfWork = unitOfWork;
-            _tauxChangeService = tauxChangeService;
             _currencyExchangeService = currencyExchangeService;
             _acheteurService = acheteurService;
             _validateurService = validateurService;
@@ -44,12 +41,6 @@ namespace ordreChange.Services.Implementations
 
             _roleStrategyContext.RegisterStrategy("Acheteur", new AcheteurStrategy());
             _roleStrategyContext.RegisterStrategy("Validateur", new ValidateurStrategy());
-        }
-
-        public double ConvertirMontantViaMatrice(double montant, string deviseSource, string deviseCible)
-        {
-            var taux = _tauxChangeService.GetTaux(deviseSource, deviseCible);
-            return montant * taux;
         }
         public async Task<Ordre?> GetOrdreByIdAsync(int id)
         {
