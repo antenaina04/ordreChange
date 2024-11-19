@@ -44,15 +44,22 @@ namespace ordreChange.Services
         /// </param>
         /// <returns>Un objet de type <typeparamref name="T"/> représentant le résultat de l'exécution.</returns>
         /// <exception cref="InvalidOperationException">Lance une exception si l'agent n'est pas trouvé.</exception>
-        public async Task<T> ValidateAndExecuteAsync<T>(int agentId, string action, Func<Agent, Task<T>> execute)
+        public async Task<T> ValidateAndExecuteAsync<T>(int agentId, int? ordreId, string action, Func<Agent, Task<T>> execute)
         {
             var agent = await _iUnitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable.");
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, action);
+            Ordre? ordre = null;
+            if (ordreId.HasValue)
+            {
+                ordre = await _iUnitOfWork.Ordres.GetByIdAsync(ordreId.Value);
+                if (ordre == null)
+                    throw new InvalidOperationException($"Ordre avec ID {ordreId.Value} introuvable.");
+            }
 
-            // Custom logic provided by sub-classes
+            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
+
             return await execute(agent);
         }
     }
