@@ -20,6 +20,7 @@ namespace ordreChange.Services.Implementations
         private readonly ITauxChangeService _tauxChangeService;
         private readonly CurrencyExchangeService _currencyExchangeService;
         private readonly IAcheteurService _acheteurService;
+        private readonly IValidateurService _validateurService;
         private readonly RoleStrategyContext _roleStrategyContext;
         private readonly IAgentRepository _agentRepository;
         private string _action;
@@ -28,6 +29,7 @@ namespace ordreChange.Services.Implementations
             IUnitOfWork unitOfWork,
             ITauxChangeService tauxChangeService,
             IAcheteurService acheteurService,
+            IValidateurService validateurService,
             CurrencyExchangeService currencyExchangeService,
             RoleStrategyContext roleStrategyContext,
             IAgentRepository agentRepository)
@@ -36,6 +38,7 @@ namespace ordreChange.Services.Implementations
             _tauxChangeService = tauxChangeService;
             _currencyExchangeService = currencyExchangeService;
             _acheteurService = acheteurService;
+            _validateurService = validateurService;
             _roleStrategyContext = new RoleStrategyContext();
             _agentRepository = agentRepository;
 
@@ -68,41 +71,16 @@ namespace ordreChange.Services.Implementations
         /// <exception cref="InvalidOperationException">Thrown if the agent cannot be found or is not authorized to perform the action.</exception>
         public async Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
         {
-            return await _acheteurService.ValidateAndExecuteAsync<Ordre>(agentId, "Création",
+            return await _acheteurService.ValidateAndExecuteAsync<Ordre>(agentId, null, "Création",
                 agent => _acheteurService.CreerOrdreAsync(agentId, typeTransaction, montant, devise, deviseCible)
             );
         }
         public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
         {
-            _action = "Validation";
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null)
-                throw new InvalidOperationException("L'agent est introuvable.");
-
-            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
-            if (ordre == null)
-                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
-
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, _action);
-
-            // Validate ordre
-            bool validationRéussie = await _unitOfWork.Ordres.ValiderOrdreAsync(ordreId);
-            if (!validationRéussie)
-                return false;
-
-            // Update ordre information
-            ordre.Statut = "Validé";
-            ordre.DateDerniereModification = DateTime.UtcNow;
-
-            // Action History
-            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, _action);
-
-            // Execute transaction
-            await _unitOfWork.CompleteAsync();
-
-            return true;
+            return await _validateurService.ValidateAndExecuteAsync<bool>(agentId, ordreId, "Validation",
+                agent => _validateurService.ValiderOrdreAsync(ordreId, agentId)
+            );
         }
-
 
 
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
