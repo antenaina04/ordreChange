@@ -127,21 +127,9 @@ namespace ordreChange.Services.Implementations
         }
         public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId)
         {
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null)
-                throw new InvalidOperationException("Agent introuvable.");
-
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "Stats");
-
-            var counts = await _unitOfWork.Ordres.GetStatutCountsAsync();
-
-            return new Dictionary<string, int>
-            {
-                { "En attente", counts.GetValueOrDefault("En attente", 0) },
-                { "A modifier", counts.GetValueOrDefault("A modifier", 0) },
-                { "Annulé", counts.GetValueOrDefault("Annulé", 0) },
-                { "Validé", counts.GetValueOrDefault("Validé", 0) }
-            };
+            return await _validateurService.ValidateAndExecuteAsync<Dictionary<string, int>>(agentId, null, "Stats",
+                agent => _validateurService.GetOrdreStatutCountsAsync()
+            );
         }
         public async Task<HistoriqueDto?> GetHistoriqueByOrdreIdAsync(int agentId, int ordreId)
         {

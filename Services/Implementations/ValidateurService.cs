@@ -43,5 +43,17 @@ namespace ordreChange.Services.Implementations
 
             return true;
         }
+        public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync()
+        {
+            var counts = await _unitOfWork.Ordres.GetStatutCountsAsync();
+
+            return new Dictionary<string, int>
+            {
+                { "En attente", counts.GetValueOrDefault("En attente", 0) },
+                { "A modifier", counts.GetValueOrDefault("A modifier", 0) },
+                { "Annulé", counts.GetValueOrDefault("Annulé", 0) },
+                { "Validé", counts.GetValueOrDefault("Validé", 0) }
+            };
+        }
     }
 }
