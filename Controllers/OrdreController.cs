@@ -111,7 +111,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                var result = await _ordreService.ValiderOrdreAsync(id, agentId);
+                var result = await _ordreService.UpdateStatusOrdreAsync(id, agentId, "Validé");
                 if (!result)
                     return BadRequest("L'ordre ne peut pas être validé.");
 

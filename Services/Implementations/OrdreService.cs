@@ -87,7 +87,7 @@ namespace ordreChange.Services.Implementations
                 agent => _acheteurService.ModifierOrdreAsync(ordreId, agentId, dto)
             );
         }
-        public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string statut)
+        public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string newStatut)
         {
             var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
             if (ordre == null)
@@ -97,24 +97,24 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
                 throw new InvalidOperationException("Agent introuvable.");
 
-            string action = statut switch
+            string action = newStatut switch
             {
                 "A modifier" => "Refus",
                 "Annulé" => "Annulation",
-                "Valider" => "Validation",
-                _ => throw new InvalidOperationException($"Statut '{statut}' non pris en charge.")
+                "Validé" => "Validation",
+                _ => throw new InvalidOperationException($"Statut '{newStatut}' non pris en charge.")
             };
 
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
 
-            ordre.Statut = statut;
+            ordre.Statut = newStatut;
             ordre.DateDerniereModification = DateTime.UtcNow;
             _unitOfWork.Ordres.Update(ordre);
 
             var historique = new HistoriqueOrdre
             {
                 Date = DateTime.UtcNow,
-                Statut = statut,
+                Statut = newStatut,
                 Action = action,
                 Montant = ordre.MontantConverti,
                 Ordre = ordre
