@@ -1,4 +1,5 @@
-﻿using ordreChange.Repositories.Interfaces;
+﻿using ordreChange.Models;
+using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Interfaces;
 using ordreChange.Services.Roles;
 using ordreChange.UnitOfWork;
@@ -54,6 +55,11 @@ namespace ordreChange.Services.Implementations
                 { "Annulé", counts.GetValueOrDefault("Annulé", 0) },
                 { "Validé", counts.GetValueOrDefault("Validé", 0) }
             };
+        }
+
+        public async Task<List<Ordre>> GetOrdresByStatutAsync(string statut)
+        {
+            return await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
         }
     }
 }

@@ -173,13 +173,9 @@ namespace ordreChange.Services.Implementations
         }
         public async Task<List<Ordre>> GetOrdresByStatutAsync(int agentId, string statut)
         {
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null)
-                throw new InvalidOperationException("Agent introuvable.");
-
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, null, agentId, "Statut");
-
-            return await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
+            return await _validateurService.ValidateAndExecuteAsync<List<Ordre>>(agentId, null, "Statut",
+                agent => _validateurService.GetOrdresByStatutAsync(statut)
+            );
         }
     }
 }
