@@ -1,6 +1,6 @@
 ﻿using ordreChange.Models;
 
-namespace ordreChange.Services
+namespace ordreChange.Services.Interfaces
 {
     public interface IBaseRoleService
     {

@@ -1,8 +1,9 @@
 ﻿using ordreChange.Models;
-using ordreChange.Services.Roles;
+using ordreChange.Services.Interfaces;
+using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
 
-namespace ordreChange.Services
+namespace ordreChange.Services.Implementations
 {
     /// <summary>
     /// Classe de base pour les services liés aux rôles.

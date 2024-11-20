@@ -1,16 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
-using ordreChange.Controllers;
-using ordreChange.Models;
+﻿using ordreChange.Models;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
-using System.Reflection.Metadata;
-using ordreChange.Services.Roles;
-using System;
 using ordreChange.Repositories.Interfaces;
 using OrdreChange.Dtos;
 using ordreChange.DTOs;
+using ordreChange.Services.Interfaces.IRoleServices;
+using ordreChange.Strategies.Roles;
 
 namespace ordreChange.Services.Implementations
 {

@@ -1,10 +1,10 @@
 ﻿using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
-using ordreChange.Services.Interfaces;
-using ordreChange.Services.Roles;
+using ordreChange.Services.Interfaces.IRoleServices;
+using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
 
-namespace ordreChange.Services.Implementations
+namespace ordreChange.Services.Implementations.RoleServices
 {
     public class ValidateurService : BaseRoleService, IValidateurService
     {

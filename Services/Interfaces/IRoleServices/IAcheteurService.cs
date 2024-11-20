@@ -1,7 +1,7 @@
 ﻿using ordreChange.Models;
 using OrdreChange.Dtos;
 
-namespace ordreChange.Services.Interfaces
+namespace ordreChange.Services.Interfaces.IRoleServices
 {
     public interface IAcheteurService : IBaseRoleService
     {

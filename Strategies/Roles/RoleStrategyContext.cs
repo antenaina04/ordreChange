@@ -1,6 +1,6 @@
 ﻿using ordreChange.Models;
 
-namespace ordreChange.Services.Roles
+namespace ordreChange.Strategies.Roles
 {
     /// <summary>
     /// Contexte pour exécuter des stratégies en fonction des rôles.
@@ -40,4 +40,4 @@ namespace ordreChange.Services.Roles
             await strategy.ValidateActionAsync(ordre, agentId, action);
         }
     }
-}                              
+}

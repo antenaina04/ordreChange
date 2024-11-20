@@ -1,6 +1,6 @@
 ﻿using ordreChange.Models;
 
-namespace ordreChange.Services.Roles
+namespace ordreChange.Strategies.Roles
 {
     public interface IRoleStrategy
     {

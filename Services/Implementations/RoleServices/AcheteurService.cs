@@ -1,13 +1,13 @@
 ﻿using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Helpers;
-using ordreChange.Services.Interfaces;
-using ordreChange.Services.Roles;
+using ordreChange.Services.Interfaces.IRoleServices;
+using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
 using OrdreChange.Dtos;
 using System.Reflection.Metadata;
 
-namespace ordreChange.Services.Implementations
+namespace ordreChange.Services.Implementations.RoleServices
 {
     public class AcheteurService : BaseRoleService, IAcheteurService
     {
@@ -52,7 +52,7 @@ namespace ordreChange.Services.Implementations
                 Agent = agent
             };
             await _unitOfWork.Ordres.AddAsync(ordre);
-            
+
             var historique = new HistoriqueOrdre
             {
                 Date = DateTime.UtcNow,

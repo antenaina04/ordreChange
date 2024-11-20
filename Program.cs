@@ -10,8 +10,10 @@ using ordreChange.Repositories.Interfaces;
 using ordreChange.Services;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Implementations;
+using ordreChange.Services.Implementations.RoleServices;
 using ordreChange.Services.Interfaces;
-using ordreChange.Services.Roles;
+using ordreChange.Services.Interfaces.IRoleServices;
+using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
 using ordreChange.Utilities;
 

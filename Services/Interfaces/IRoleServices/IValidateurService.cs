@@ -1,6 +1,6 @@
 ﻿using ordreChange.Models;
 
-namespace ordreChange.Services.Interfaces
+namespace ordreChange.Services.Interfaces.IRoleServices
 {
     public interface IValidateurService : IBaseRoleService
     {
