@@ -6,14 +6,13 @@ namespace ordreChange.Services.Interfaces
 {
     public interface IOrdreService
     {
-        Task<Ordre> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible);
-        Task<Ordre?> GetOrdreByIdAsync(int id);
+        Task<OrdreResponseDto> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible);
+        Task<OrdreDto?> GetOrdreDtoByIdAsync(int id);
         Task<bool> ValiderOrdreAsync(int ordreId, int agentId);
         Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string statut);
-        //Task<bool> ModifierOrdreAsync(int ordreId, int agentId, Ordre ordreModifications);
         Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto ordreModifications);
         Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId);
-        Task<List<Ordre>> GetOrdresByStatutAsync(int agentId, string statut);
-        Task<HistoriqueDto?> GetHistoriqueByOrdreIdAsync(int agentId, int ordreId);
+        Task<List<OrdreDto>> GetOrdreDtoByStatutAsync(int agentId, string statut);
+        Task<HistoriqueDto?> GetHistoriqueDtoByOrdreIdAsync(int agentId, int ordreId);
     }
 }

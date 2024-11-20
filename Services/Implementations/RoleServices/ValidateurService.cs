@@ -1,8 +1,10 @@
-﻿using ordreChange.Models;
+﻿using AutoMapper;
+using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Interfaces.IRoleServices;
 using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
+using OrdreChange.Dtos;
 
 namespace ordreChange.Services.Implementations.RoleServices
 {
@@ -10,15 +12,18 @@ namespace ordreChange.Services.Implementations.RoleServices
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAgentRepository _agentRepository;
+        private readonly IMapper _mapper;
 
         public ValidateurService(
             IUnitOfWork unitOfWork,
             RoleStrategyContext roleStrategyContext,
-            IAgentRepository agentRepository)
+            IAgentRepository agentRepository,
+            IMapper mapper)
             : base(unitOfWork, roleStrategyContext)
         {
             _unitOfWork = unitOfWork;
             _agentRepository = agentRepository;
+            _mapper = mapper;
         }
 
         public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
@@ -57,9 +62,13 @@ namespace ordreChange.Services.Implementations.RoleServices
             };
         }
 
-        public async Task<List<Ordre>> GetOrdresByStatutAsync(string statut)
+        public async Task<List<OrdreDto>> GetOrdreDtoByStatutAsync(string statut)
         {
-            return await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
+            var ordres = await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
+            if (ordres == null || ordres.Count == 0)
+                return new List<OrdreDto>();
+            // AUTO_MAPPER
+            return _mapper.Map<List<OrdreDto>>(ordres);
         }
     }
 }

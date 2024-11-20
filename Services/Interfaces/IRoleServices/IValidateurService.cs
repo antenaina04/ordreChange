@@ -1,4 +1,5 @@
 ﻿using ordreChange.Models;
+using OrdreChange.Dtos;
 
 namespace ordreChange.Services.Interfaces.IRoleServices
 {
@@ -6,6 +7,6 @@ namespace ordreChange.Services.Interfaces.IRoleServices
     {
         Task<bool> ValiderOrdreAsync(int ordreId, int agentId);
         Task<Dictionary<string, int>> GetOrdreStatutCountsAsync();
-        Task<List<Ordre>> GetOrdresByStatutAsync(string statut);
+        Task<List<OrdreDto>> GetOrdreDtoByStatutAsync(string statut);
     }
 }

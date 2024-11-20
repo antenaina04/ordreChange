@@ -1,4 +1,5 @@
-﻿using ordreChange.Models;
+﻿using AutoMapper;
+using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Interfaces.IRoleServices;
@@ -14,20 +15,23 @@ namespace ordreChange.Services.Implementations.RoleServices
         private readonly CurrencyExchangeService _currencyExchangeService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAgentRepository _agentRepository;
+        private readonly IMapper _mapper;
 
 
         public AcheteurService(
             IUnitOfWork unitOfWork,
             RoleStrategyContext roleStrategyContext,
             CurrencyExchangeService currencyExchangeService,
-            IAgentRepository agentRepository)
+            IAgentRepository agentRepository,
+            IMapper mapper)
             : base(unitOfWork, roleStrategyContext)
         {
             _unitOfWork = unitOfWork;
             _currencyExchangeService = currencyExchangeService;
             _agentRepository = agentRepository;
+            _mapper = mapper;
         }
-        public async Task<Ordre> CreerOrdreAsync(
+        public async Task<OrdreResponseDto> CreerOrdreAsync(
             int agentId,
             string typeTransaction,
             float montant,
@@ -64,7 +68,7 @@ namespace ordreChange.Services.Implementations.RoleServices
             await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
 
             await _unitOfWork.CompleteAsync();
-            return ordre;
+            return _mapper.Map<OrdreResponseDto>(ordre);
         }
 
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)

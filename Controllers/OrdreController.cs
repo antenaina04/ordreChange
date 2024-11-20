@@ -30,26 +30,7 @@ namespace ordreChange.Controllers
 
             try
             {
-                var ordre = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible);
-
-                var response = new OrdreResponseDto
-                {
-                    IdOrdre = ordre.IdOrdre,
-                    Montant = ordre.Montant,
-                    Devise = ordre.Devise,
-                    DeviseCible = ordre.DeviseCible,
-                    Statut = ordre.Statut,
-                    TypeTransaction = ordre.TypeTransaction,
-                    DateCreation = ordre.DateCreation,
-                    MontantConverti = ordre.MontantConverti,
-                    Agent = new AgentDto
-                    {
-                        IdAgent = ordre.Agent.IdAgent,
-                        Nom = ordre.Agent.Nom,
-                        RoleName = ordre.Agent.Role.Name
-                    }
-                };
-
+                var response = await _ordreService.CreerOrdreAsync(agentId, dto.TypeTransaction, dto.Montant, dto.Devise, dto.DeviseCible);
                 return CreatedAtAction(nameof(CreerOrdre), new { id = response.IdOrdre }, response);
             }
             catch (InvalidOperationException ex)
@@ -61,28 +42,15 @@ namespace ordreChange.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrdre(int id)
         {
-            var ordre = await _ordreService.GetOrdreByIdAsync(id);
-            if (ordre == null) return NotFound();
+            // Utilisation du service pour obtenir le DTO mappé
+            var ordreDto = await _ordreService.GetOrdreDtoByIdAsync(id);
 
-            return Ok(new OrdreDto
-            {
-                IdOrdre = ordre.IdOrdre,
-                Montant = ordre.Montant,
-                Devise = ordre.Devise,
-                DeviseCible = ordre.DeviseCible,
-                Statut = ordre.Statut,
-                TypeTransaction = ordre.TypeTransaction,
-                DateCreation = ordre.DateCreation,
-                MontantConverti = ordre.MontantConverti,
-                //IdAgent = ordre.IdAgent,
-                Agent = new AgentDto
-                {
-                    IdAgent = ordre.IdAgent,
-                    Nom = ordre.Agent.Nom,
-                    RoleName = ordre.Agent.Role.Name
-                }
-            });
+            if (ordreDto == null)
+                return NotFound(); // Retourne 404 si l'ordre n'existe pas
+
+            return Ok(ordreDto); // Retourne directement le DTO mappé
         }
+
         [HttpPost("{id}/annuler")]
         public async Task<IActionResult> AnnulerOrdre(int id)
         {
@@ -176,41 +144,23 @@ namespace ordreChange.Controllers
         {
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-            var historique = await _ordreService.GetHistoriqueByOrdreIdAsync(agentId, id);
-            if (historique == null)
+            var historiqueDto = await _ordreService.GetHistoriqueDtoByOrdreIdAsync(agentId, id);
+            if (historiqueDto == null)
                 return NotFound("Aucun historique trouvé pour cet ordre.");
 
-            return Ok(historique);
+            return Ok(historiqueDto);
         }
 
         [HttpGet("statut/{statut}")]
         public async Task<IActionResult> GetOrdresByStatut(string statut)
         {
             var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-
-            var ordres = await _ordreService.GetOrdresByStatutAsync(agentId, statut);
-            if (ordres == null || ordres.Count == 0)
+            var ordreDto = await _ordreService.GetOrdreDtoByStatutAsync(agentId, statut);
+            
+            if (ordreDto == null || ordreDto.Count == 0)
                 return NotFound($"Aucun ordre trouvé avec le statut '{statut}'.");
 
-            var ordreDtos = ordres.Select(o => new OrdreDto
-            {
-                IdOrdre = o.IdOrdre,
-                Montant = o.Montant,
-                Devise = o.Devise,
-                DeviseCible = o.DeviseCible,
-                Statut = o.Statut,
-                TypeTransaction = o.TypeTransaction,
-                DateCreation = o.DateCreation,
-                MontantConverti = o.MontantConverti,
-                Agent = new AgentDto
-                {
-                    IdAgent = o.Agent.IdAgent,
-                    Nom = o.Agent.Nom,
-                    RoleName = o.Agent.Role.Name
-                }
-            }).ToList();
-
-            return Ok(ordreDtos);
+            return Ok(ordreDto);
         }
 
     }

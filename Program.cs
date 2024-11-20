@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ordreChange.Data;
+using ordreChange.Mappings;
 using ordreChange.Repositories.Implementations;
 using ordreChange.Repositories.Interfaces;
-using ordreChange.Services;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Implementations;
 using ordreChange.Services.Implementations.RoleServices;
@@ -64,6 +64,9 @@ builder.WebHost.ConfigureKestrel(options =>
 // Ajout services dans le container
 builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// AutoMapper Dependency Injection
+builder.Services.AddAutoMapper(typeof(ordreChange.Mappings.AutoMapperProfile));
 
 // Configuration du CurrencyExchangeService
 builder.Services.AddHttpClient<CurrencyExchangeService>();
