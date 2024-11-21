@@ -61,13 +61,15 @@ namespace ordreChange.Services.Implementations
                 agent => _acheteurService.ModifierOrdreAsync(ordreId, agentId, dto)
             );
         }
+        /*
         public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
         {
             return await _validateurService.ValidateAndExecuteAsync<bool>(agentId, ordreId, "Validation",
                 agent => _validateurService.ValiderOrdreAsync(ordreId, agentId)
             );
         }
-        public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync(int agentId)
+        */
+        public async Task<object> GetOrdreStatutCountsAsync(int agentId)
         {
             return await _validateurService.ValidateAndExecuteAsync<Dictionary<string, int>>(agentId, null, "Stats",
                 agent => _validateurService.GetOrdreStatutCountsAsync()
