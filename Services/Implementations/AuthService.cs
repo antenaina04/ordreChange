@@ -1,4 +1,5 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using NLog;
 using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Interfaces;
@@ -14,6 +15,7 @@ namespace ordreChange.Services.Implementations
     {
         private readonly IAgentRepository _agentRepository;
         private readonly IConfiguration _configuration;
+        private static readonly NLog.ILogger Logger = LogManager.GetCurrentClassLogger();
 
         public AuthService(IAgentRepository agentRepository, IConfiguration configuration)
         {
@@ -23,74 +25,113 @@ namespace ordreChange.Services.Implementations
 
         public async Task<string?> AuthenticateAsync(string username, string password)
         {
-            var agent = await _agentRepository.GetByUsernameAsync(username);
-            /*
-            // Utilisation PWD déjà crypté dans la base de données
-            if (agent == null || !VerifyPasswordHash(password, agent.PasswordHash))
-                return null;    
-            */
-            if (agent == null)
-                return null;
-
-            // DEVELOPMENT/TEST mode
-            if (password == agent.PasswordHash)
+            Logger.Info("Tentative d'authentification pour l'utilisateur : {Username}", username);
+            try
             {
+                var agent = await _agentRepository.GetByUsernameAsync(username);
+                /*
+                // Utilisation PWD déjà crypté dans la base de données
+                if (agent == null || !VerifyPasswordHash(password, agent.PasswordHash))
+                    return null;    
+                */
+                if (agent == null)
+                    return null;
+
+                // DEVELOPMENT/TEST mode
+                if (password == agent.PasswordHash)
+                {
+                    Logger.Info("Authentification réussie pour l'utilisateur {Username}.", username);
+                    return GenerateJwtToken(agent);
+                }
+                /*
+                // PRODUCTION mode
+                if (!VerifyPasswordHash(password, agent.PasswordHash))
+                {
+                    Logger.Warn("Échec de la vérification du mot de passe pour l'utilisateur {Username}.", username);
+                    return null;
+                }*/
                 return GenerateJwtToken(agent);
             }
-
-            // PRODUCTION mode
-            if (!VerifyPasswordHash(password, agent.PasswordHash))
-                return null;
-            return GenerateJwtToken(agent);
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Erreur lors de l'authentification pour l'utilisateur {Username}.", username);
+                throw; // Relancer l'exception pour la gestion en amont
+            }
         }
 
         private bool VerifyPasswordHash(string password, string storedHash)
         {
-            using (var sha256 = SHA256.Create())
+            try
             {
-                var computedHash = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
-                return computedHash == storedHash;
+
+                using (var sha256 = SHA256.Create())
+                {
+                    var computedHash = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+                    return computedHash == storedHash;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Erreur lors de la vérification du hachage du mot de passe.");
+                throw;
             }
         }
         public string HashPassword(string password)
         {
-            using (var sha256 = SHA256.Create())
+            try
             {
-                return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+                using (var sha256 = SHA256.Create())
+                {
+                    return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Erreur lors du hachage du mot de passe.");
+                throw;
             }
         }
         private string GenerateJwtToken(Agent agent)
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            string secureKey = jwtSettings["Secret"] ?? SecurityHelper.GenerateSecureKey(32);
-            var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secureKey));
-            var creds = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-
-            if (agent.Role == null)
+            try
             {
-                throw new InvalidOperationException("Le rôle de l'agent n'est pas chargé.");
-            }
 
-            var claims = new[]
-            {
+                var jwtSettings = _configuration.GetSection("JwtSettings");
+                string secureKey = jwtSettings["Secret"] ?? SecurityHelper.GenerateSecureKey(32);
+                var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secureKey));
+                var creds = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+                if (agent.Role == null)
+                {
+                    throw new InvalidOperationException("Le rôle de l'agent n'est pas chargé.");
+                }
+
+                var claims = new[]
+                {
                 new Claim(JwtRegisteredClaimNames.Sub, agent.IdAgent.ToString()),
                 new Claim(ClaimTypes.Role, agent.Role.Name),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()) // Date d'émission
             };
-            var tokenDescriptor = new SecurityTokenDescriptor
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(claims),
+                    Expires = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryMinutes"] ?? "60")),
+                    Issuer = jwtSettings["Issuer"],
+                    Audience = jwtSettings["Audience"],
+                    SigningCredentials = creds
+                };
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+
+                return tokenHandler.WriteToken(token);
+            }
+            catch (Exception ex)
             {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryMinutes"] ?? "60")),
-                Issuer = jwtSettings["Issuer"],
-                Audience = jwtSettings["Audience"],
-                SigningCredentials = creds
-            };
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-
-            return tokenHandler.WriteToken(token);
+                Logger.Error(ex, "Erreur lors de la génération du token JWT pour l'utilisateur {AgentId}.", agent.IdAgent);
+                throw;
+            }
         }
     }
 }

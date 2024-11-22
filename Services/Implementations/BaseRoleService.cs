@@ -1,4 +1,5 @@
-﻿using ordreChange.Models;
+﻿using NLog;
+using ordreChange.Models;
 using ordreChange.Services.Interfaces;
 using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
@@ -20,6 +21,7 @@ namespace ordreChange.Services.Implementations
         /// Contexte de stratégie pour la gestion des rôles et des autorisations.
         /// </summary>
         protected readonly RoleStrategyContext _roleStrategyContext;
+        private static readonly NLog.ILogger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
         /// Constructeur de la classe de base pour les services liés aux rôles.
@@ -47,20 +49,30 @@ namespace ordreChange.Services.Implementations
         /// <exception cref="InvalidOperationException">Lance une exception si l'agent n'est pas trouvé.</exception>
         public async Task<T> ValidateAndExecuteAsync<T>(int agentId, int? ordreId, string action, Func<Agent, Task<T>> execute)
         {
+            Logger.Info("Validating action {Action} for agent {AgentId} and order {OrdreId}", action, agentId, ordreId);
+
             var agent = await _iUnitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
                 throw new InvalidOperationException("Agent introuvable.");
+            }
 
             Ordre? ordre = null;
             if (ordreId.HasValue)
             {
                 ordre = await _iUnitOfWork.Ordres.GetByIdAsync(ordreId.Value);
                 if (ordre == null)
+                {
+                    Logger.Error("Order with ID {OrdreId} not found", ordreId.Value);
                     throw new InvalidOperationException($"Ordre avec ID {ordreId.Value} introuvable.");
+                }
             }
 
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
-
+            
+            Logger.Info("Action {Action} validated for agent {AgentId} and order {OrdreId}", action, agentId, ordreId);
+            
             return await execute(agent);
         }
     }

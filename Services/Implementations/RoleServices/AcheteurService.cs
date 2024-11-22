@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using NLog;
 using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Helpers;
@@ -16,7 +17,7 @@ namespace ordreChange.Services.Implementations.RoleServices
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAgentRepository _agentRepository;
         private readonly IMapper _mapper;
-
+        private static readonly NLog.ILogger Logger = LogManager.GetCurrentClassLogger();
 
         public AcheteurService(
             IUnitOfWork unitOfWork,
@@ -38,9 +39,19 @@ namespace ordreChange.Services.Implementations.RoleServices
             string devise,
             string deviseCible)
         {
+            Logger.Info("Creating order for agent {AgentId} with amount {Montant} {Devise} to {DeviseCible}", agentId, montant, devise, deviseCible);
             var agent = await _agentRepository.GetByIdAsync(agentId);
             if (agent == null)
-                throw new InvalidOperationException("Agent introuvable");
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new KeyNotFoundException("L'agent spécifié est introuvable.");
+            }
+
+            if (montant <= 0)
+            {
+                Logger.Warn("Invalid amount {Montant} specified for agent {AgentId}", montant, agentId);
+                throw new ArgumentException("Le montant doit être supérieur à 0.");
+            }
 
             double montantConverti = await _currencyExchangeService.CurrencyConversion(montant, devise, deviseCible);
 
@@ -68,6 +79,7 @@ namespace ordreChange.Services.Implementations.RoleServices
             await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
 
             await _unitOfWork.CompleteAsync();
+            Logger.Info("Order created successfully for agent {AgentId}", agentId);
             return _mapper.Map<OrdreResponseDto>(ordre);
         }
 
@@ -75,12 +87,17 @@ namespace ordreChange.Services.Implementations.RoleServices
         {
             var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
 
-            if (ordreExistant == null)
-                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+            if (ordreExistant == null) {
+                Logger.Error("Order with ID {OrdreId} not found", ordreId);
+                throw new KeyNotFoundException("L'ordre a modifier est introuvable.");
+            }
 
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
-                throw new InvalidOperationException("Agent introuvable.");
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new KeyNotFoundException("L'agent spécifié est introuvable.");
+            }
 
             double montantConverti = await _currencyExchangeService.CurrencyConversion(dto.Montant, dto.Devise, dto.DeviseCible);
 
@@ -106,7 +123,7 @@ namespace ordreChange.Services.Implementations.RoleServices
             await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
 
             await _unitOfWork.CompleteAsync();
-
+            Logger.Info("Order {OrdreId} modified successfully for agent {AgentId}", ordreId, agentId);
             return true;
         }
     }

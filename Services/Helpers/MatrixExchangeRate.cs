@@ -1,4 +1,5 @@
-﻿using ordreChange.Services.Implementations;
+﻿using NLog;
+using ordreChange.Services.Implementations;
 
 namespace ordreChange.Services.Helpers
 {
@@ -8,7 +9,7 @@ namespace ordreChange.Services.Helpers
         private static readonly Lazy<MatrixExchangeRate> _instance = new(() => new MatrixExchangeRate());
         private readonly Dictionary<string, int> _deviseIndices;
         private readonly double[,] _tauxChange;
-
+        private static readonly NLog.ILogger Logger = LogManager.GetCurrentClassLogger();
         private MatrixExchangeRate()
         {
             string[] devises = { "USD", "EUR", "CAD", "GBP", "MGA" };
@@ -24,6 +25,7 @@ namespace ordreChange.Services.Helpers
 
         private void InitializeMatrice(string[] devises)
         {
+            Logger.Info("Initializing exchange rate matrix");
             for (int i = 0; i < devises.Length; i++)
             {
                 for (int j = 0; j < devises.Length; j++)
@@ -31,10 +33,12 @@ namespace ordreChange.Services.Helpers
                     _tauxChange[i, j] = (i == j) ? 1.0 : GetRealisticExchangeRate(devises[i], devises[j]);
                 }
             }
+            Logger.Info("Exchange rate matrix initialized successfully");
         }
 
         private double GetRealisticExchangeRate(string fromCurrency, string toCurrency)
         {
+            Logger.Info("Fetching realistic exchange rate from {FromCurrency} to {ToCurrency}", fromCurrency, toCurrency);
             if (fromCurrency == "USD" && toCurrency == "EUR") return 0.92;
             if (fromCurrency == "USD" && toCurrency == "CAD") return 1.25;
             if (fromCurrency == "USD" && toCurrency == "GBP") return 0.73;
@@ -61,8 +65,10 @@ namespace ordreChange.Services.Helpers
 
         public double GetTaux(string deviseSource, string deviseCible)
         {
+            Logger.Info("Getting exchange rate from {DeviseSource} to {DeviseCible}", deviseSource, deviseCible);
             int indexSource = _deviseIndices[deviseSource];
             int indexCible = _deviseIndices[deviseCible];
+            Logger.Info("Exchange rate from {DeviseSource} to {DeviseCible} is {Taux}", deviseSource, deviseCible, taux);
             return _tauxChange[indexSource, indexCible];
         }
     }

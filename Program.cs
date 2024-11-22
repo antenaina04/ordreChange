@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using NLog;
+using NLog.Web;
 using ordreChange.Data;
 using ordreChange.Mappings;
 using ordreChange.Repositories.Implementations;
@@ -17,132 +19,140 @@ using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
 using ordreChange.Utilities;
 
-var builder = WebApplication.CreateBuilder(args);
 
-// Génération et configuration de la clé secrète JWT
-var secureKey = SecurityHelper.GenerateSecureKey(32);
-builder.Configuration["JwtSettings:Secret"] = secureKey;
+//var logger = NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
+var logger = NLog.LogManager.GetCurrentClassLogger();
 
-// JWT settings
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = Encoding.ASCII.GetBytes(secureKey);
 
-// Configuration de l'authentification JWT
-builder.Services.AddAuthentication(options =>
+try
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    logger.Debug("Initialisation de l'application...");
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Génération et configuration de la clé secrète JWT
+    var secureKey = SecurityHelper.GenerateSecureKey(32);
+    builder.Configuration["JwtSettings:Secret"] = secureKey;
+
+    // JWT settings
+    var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+    var secretKey = Encoding.ASCII.GetBytes(secureKey);
+
+    // Configuration de l'authentification JWT
+    builder.Services.AddAuthentication(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(secretKey)
-    };
-});
-
-// Configure Kestrel : FIX PBM compatibilité with HTTP/2.
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ConfigureHttpsDefaults(httpsOptions =>
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
     {
-        httpsOptions.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(secretKey)
+        };
     });
-    options.ListenLocalhost(7113, listenOptions =>
+
+    // Configure Kestrel : FIX PBM compatibilité with HTTP/2.
+    builder.WebHost.ConfigureKestrel(options =>
     {
-        listenOptions.UseHttps();
-        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+        options.ConfigureHttpsDefaults(httpsOptions =>
+        {
+            httpsOptions.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+        });
+        options.ListenLocalhost(7113, listenOptions =>
+        {
+            listenOptions.UseHttps();
+            listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+        });
     });
-});
 
-// Ajout services dans le container
-builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // Ajout services dans le container
+    builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// AutoMapper Dependency Injection
-builder.Services.AddAutoMapper(typeof(ordreChange.Mappings.AutoMapperProfile));
+    // AutoMapper Dependency Injection
+    builder.Services.AddAutoMapper(typeof(ordreChange.Mappings.AutoMapperProfile));
 
-// Configuration du CurrencyExchangeService
-builder.Services.AddHttpClient<CurrencyExchangeService>();
-builder.Services.AddScoped<CurrencyExchangeService>();
-
-/// <summary>
-/// Configures the dependency injection container to use the RoleStrategyContext
-/// and registers role-based strategies for handling role-specific logic.
-/// </summary>
-builder.Services.AddScoped<RoleStrategyContext>(provider =>
-{
-    // Create an instance of RoleStrategyContext
-    var context = new RoleStrategyContext();
+    // Configuration du CurrencyExchangeService
+    builder.Services.AddHttpClient<CurrencyExchangeService>();
+    builder.Services.AddScoped<CurrencyExchangeService>();
 
     /// <summary>
-    /// Registers strategies for handling logic based on specific roles.
-    /// Each strategy encapsulates the logic for a single role, allowing dynamic
-    /// selection of behavior based on the user's role.
+    /// Configures the dependency injection container to use the RoleStrategyContext
+    /// and registers role-based strategies for handling role-specific logic.
     /// </summary>
-    /// <remarks>
-    /// - "Acheteur" is registered with <see cref="AcheteurStrategy"/> to handle buyer-specific logic.
-    /// - "Validateur" is registered with <see cref="ValidateurStrategy"/> to handle validator-specific logic.
-    /// </remarks>
-    context.RegisterStrategy("Acheteur", new AcheteurStrategy());
-    context.RegisterStrategy("Validateur", new ValidateurStrategy());
-
-    // Return the fully configured context to the DI container
-    return context;
-});
-
-builder.Services.AddScoped<IRoleStrategy, AcheteurStrategy>();
-builder.Services.AddScoped<IRoleStrategy, ValidateurStrategy>();
-
-// Dependency Injection
-builder.Services.AddScoped<IAgentRepository, AgentRepository>();
-builder.Services.AddScoped<IAcheteurService, AcheteurService>();
-builder.Services.AddScoped<IValidateurService, ValidateurService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IOrdreService, OrdreService>();
-
-// Add Authorization
-builder.Services.AddAuthorization();
-
-// Add Controllers and Swagger
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen(); // OLD_SWAGGER Conf.
-// Conf. JWT into SWAGGER
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
+    builder.Services.AddScoped<RoleStrategyContext>(provider =>
     {
-        Title = "exercices_PE",
-        Version = "v1",
-        Description = "API pour la gestion des ordres de change",
-        Contact = new OpenApiContact
+        // Create an instance of RoleStrategyContext
+        var context = new RoleStrategyContext();
+
+        /// <summary>
+        /// Registers strategies for handling logic based on specific roles.
+        /// Each strategy encapsulates the logic for a single role, allowing dynamic
+        /// selection of behavior based on the user's role.
+        /// </summary>
+        /// <remarks>
+        /// - "Acheteur" is registered with <see cref="AcheteurStrategy"/> to handle buyer-specific logic.
+        /// - "Validateur" is registered with <see cref="ValidateurStrategy"/> to handle validator-specific logic.
+        /// </remarks>
+        context.RegisterStrategy("Acheteur", new AcheteurStrategy());
+        context.RegisterStrategy("Validateur", new ValidateurStrategy());
+
+        // Return the fully configured context to the DI container
+        return context;
+    });
+
+    builder.Services.AddScoped<IRoleStrategy, AcheteurStrategy>();
+    builder.Services.AddScoped<IRoleStrategy, ValidateurStrategy>();
+
+    // Dependency Injection
+    builder.Services.AddScoped<IAgentRepository, AgentRepository>();
+    builder.Services.AddScoped<IAcheteurService, AcheteurService>();
+    builder.Services.AddScoped<IValidateurService, ValidateurService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+    builder.Services.AddScoped<IOrdreService, OrdreService>();
+
+    // Add Authorization
+    builder.Services.AddAuthorization();
+
+    // Add Controllers and Swagger
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    //builder.Services.AddSwaggerGen(); // OLD_SWAGGER Conf.
+    // Conf. JWT into SWAGGER
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo
         {
-            Name = "Antenaina Randrianantoandro",
-            Email = "antenaina.randrianantoandro@pulse.mg"
-        }
-    });
+            Title = "exercices_PE",
+            Version = "v1",
+            Description = "API pour la gestion des ordres de change",
+            Contact = new OpenApiContact
+            {
+                Name = "Antenaina Randrianantoandro",
+                Email = "antenaina.randrianantoandro@pulse.mg"
+            }
+        });
 
 
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Entrez 'Bearer' [espace] puis votre token JWT valide.\r\n\r\nExemple: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
-    });
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Entrez 'Bearer' [espace] puis votre token JWT valide.\r\n\r\nExemple: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+        });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
         {
             new OpenApiSecurityScheme
             {
@@ -154,31 +164,44 @@ builder.Services.AddSwaggerGen(c =>
             },
             Array.Empty<string>()
         }
+        });
     });
-});
 
 
-var app = builder.Build();
+    var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    //app.UseSwaggerUI(); // OLD_SWAGGER Conf.
-    app.UseSwaggerUI(c =>
+    // Enregistrement du middleware global pour les exceptions
+    app.UseMiddleware<ordreChange.Middlewares.GlobalExceptionMiddleware>();
+
+    // Configure the HTTP request pipeline.
+    if (app.Environment.IsDevelopment())
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ordre de Change API V1");
-        c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
-        c.DefaultModelsExpandDepth(-1); // Cache les modèles par défaut
-    });
+        app.UseSwagger();
+        //app.UseSwaggerUI(); // OLD_SWAGGER Conf.
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ordre de Change API V1");
+            c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+            c.DefaultModelsExpandDepth(-1); // Cache les modèles par défaut
+        });
+    }
+    logger.Info("Application démarrée avec succès");
+    app.UseHttpsRedirection();
+
+    // Add Authentication & Authorization middleware
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-
-// Add Authentication & Authorization middleware
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+catch (Exception ex)
+{
+    logger.Error(ex, "Erreur critique dans l'application.");
+    throw;
+}
+finally
+{
+    LogManager.Shutdown();
+}

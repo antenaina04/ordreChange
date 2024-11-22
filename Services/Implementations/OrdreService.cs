@@ -8,6 +8,7 @@ using ordreChange.DTOs;
 using ordreChange.Services.Interfaces.IRoleServices;
 using ordreChange.Strategies.Roles;
 using AutoMapper;
+using NLog;
 
 namespace ordreChange.Services.Implementations
 {
@@ -20,6 +21,7 @@ namespace ordreChange.Services.Implementations
         private readonly RoleStrategyContext _roleStrategyContext;
         private readonly IAgentRepository _agentRepository;
         private readonly IMapper _mapper;
+        private static readonly NLog.ILogger Logger = LogManager.GetCurrentClassLogger();
 
         public OrdreService(
             IUnitOfWork unitOfWork,
@@ -43,8 +45,13 @@ namespace ordreChange.Services.Implementations
         }
         public async Task<OrdreDto?> GetOrdreDtoByIdAsync(int id)
         {
+            Logger.Info("Fetching order with ID {OrdreId}", id);
             var ordre = await _unitOfWork.Ordres.GetOrdreByIdAsync(id);
-            if (ordre == null) return null;
+            if (ordre == null)
+            {
+                Logger.Warn("Order with ID {OrdreId} not found", id);
+                return null;
+            }
             // AUTO_MAPPER
             return _mapper.Map<OrdreDto>(ordre);
         }
@@ -54,7 +61,7 @@ namespace ordreChange.Services.Implementations
                 agent => _acheteurService.CreerOrdreAsync(agentId, typeTransaction, montant, devise, deviseCible)
             );
         }
-        
+
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
         {
             return await _acheteurService.ValidateAndExecuteAsync<bool>(agentId, ordreId, "Modification",
@@ -83,13 +90,20 @@ namespace ordreChange.Services.Implementations
         }
         public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string newStatut)
         {
+            Logger.Info("Updating status of order {OrdreId} to {NewStatut} by agent {AgentId}", ordreId, newStatut, agentId);
             var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
             if (ordre == null)
+            {
+                Logger.Error("Order with ID {OrdreId} not found", ordreId);
                 throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+            }
 
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
                 throw new InvalidOperationException("Agent introuvable.");
+            }
 
             string action = newStatut switch
             {
@@ -117,19 +131,28 @@ namespace ordreChange.Services.Implementations
             await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
             await _unitOfWork.CompleteAsync();
 
+            Logger.Info("Order {OrdreId} status updated to {NewStatut} by agent {AgentId}", ordreId, newStatut, agentId);
             return true;
         }
-        
+
         public async Task<HistoriqueDto?> GetHistoriqueDtoByOrdreIdAsync(int agentId, int ordreId)
         {
+            Logger.Info("Fetching history for order {OrdreId} by agent {AgentId}", ordreId, agentId);
+
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
                 throw new InvalidOperationException("Agent introuvable.");
+            }
 
             // Récupérer l'ordre et ses historiques depuis le repository
             var ordre = await _unitOfWork.Ordres.GetOrdreWithHistoriqueByIdAsync(ordreId);
             if (ordre == null)
+            {
+                Logger.Error("Order with ID {OrdreId} not found", ordreId);
                 throw new InvalidOperationException("Ordre introuvable.");
+            }
 
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, "History");
 
