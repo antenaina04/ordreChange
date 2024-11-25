@@ -28,40 +28,6 @@ namespace ordreChange.Services.Implementations.RoleServices
             _mapper = mapper;
         }
 
-        public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
-        {
-            Logger.Info("Validating order {OrdreId} for agent {AgentId}", ordreId, agentId);
-
-            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
-            if (agent == null)
-            {
-                Logger.Error("Agent with ID {AgentId} not found", agentId);
-                throw new KeyNotFoundException("L'agent spécifié est introuvable.");
-            }
-
-            var ordre = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
-            if (ordre == null)
-            {
-                Logger.Error("Order with ID {OrdreId} not found", ordreId);
-                throw new KeyNotFoundException("L'ordre à valider est introuvable.");
-            }
-
-            bool validationRéussie = await _unitOfWork.Ordres.ValiderOrdreAsync(ordreId);
-            if (!validationRéussie)
-            {
-                Logger.Warn("Validation failed for order {OrdreId}", ordreId);
-                return false;
-            }
-
-            ordre.Statut = "Validé";
-            ordre.DateDerniereModification = DateTime.UtcNow;
-
-            await _unitOfWork.Ordres.AjouterHistoriqueAsync(ordre, "Validation");
-
-            await _unitOfWork.CompleteAsync();
-            Logger.Info("Order {OrdreId} validated successfully for agent {AgentId}", ordreId, agentId);
-            return true;
-        }
         public async Task<Dictionary<string, int>> GetOrdreStatutCountsAsync()
         {
             Logger.Info("Fetching order status counts");
