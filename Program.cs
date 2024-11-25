@@ -55,6 +55,19 @@ try
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(secretKey)
         };
+
+        // Empêcher JwtBearer de gérer automatiquement les exceptions
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                // Log the exception or handle it as needed
+                //context.NoResult(); // Empêche la gestion automatique des erreurs
+                context.Response.Headers.Append("Authentication-Failed", "true");
+                context.Fail(context.Exception);
+                return Task.CompletedTask;
+            }
+        };
     });
 
     // Configure Kestrel : FIX PBM compatibilité with HTTP/2.
@@ -171,7 +184,6 @@ try
     var app = builder.Build();
 
     // Enregistrement du middleware global pour les exceptions
-    app.UseMiddleware<ordreChange.Middlewares.GlobalExceptionMiddleware>();
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
@@ -185,7 +197,10 @@ try
             c.DefaultModelsExpandDepth(-1); // Cache les modèles par défaut
         });
     }
-    logger.Info("Application démarrée avec succès");
+    app.UseMiddleware<ordreChange.Middlewares.ExceptionMiddleware>(); // Injection de dépendance pour la centralisation des exceptions
+
+    logger.Info("Application successfully launched");
+
     app.UseHttpsRedirection();
 
     // Add Authentication & Authorization middleware
