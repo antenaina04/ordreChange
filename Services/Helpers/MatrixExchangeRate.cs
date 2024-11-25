@@ -68,7 +68,7 @@ namespace ordreChange.Services.Helpers
             Logger.Info("Getting exchange rate from {DeviseSource} to {DeviseCible}", deviseSource, deviseCible);
             int indexSource = _deviseIndices[deviseSource];
             int indexCible = _deviseIndices[deviseCible];
-            Logger.Info("Exchange rate from {DeviseSource} to {DeviseCible} is {Taux}", deviseSource, deviseCible, taux);
+            Logger.Info("Exchange rate from {DeviseSource} to {DeviseCible} is {Taux}", deviseSource, deviseCible, _tauxChange[indexSource, indexCible]);
             return _tauxChange[indexSource, indexCible];
         }
     }
