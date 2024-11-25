@@ -15,19 +15,19 @@ namespace ordreChange.Strategies.Roles
             if (action == "Modification" || action == "Annulation")
             {
                 if (ordre == null || ordre.IdAgent != agentId)
-                    throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé à le modifier.");
+                    throw new UnauthorizedAccessException("Only the creator of this order is authorized to modify it.");
                 if (ordre.Statut == "Validé")
-                    throw new InvalidOperationException("Ordre déjà validé, modification ou annulation non autorisée.");
+                    throw new UnauthorizedAccessException("Order already validated, modification or cancellation not authorized.");
                 return Task.CompletedTask;
             }
 
             if (action == "History")
             {
                 if (ordre == null || ordre.IdAgent != agentId)
-                    throw new InvalidOperationException("Seul le créateur de cet ordre est autorisé cette historique.");
+                    throw new UnauthorizedAccessException("Only the creator of this order is authorized to access this history.");
                 return Task.CompletedTask;
             }
-            throw new InvalidOperationException($"Action '{action}' non autorisée pour le rôle Acheteur.");
+            throw new UnauthorizedAccessException($"Action '{action}' not allowed for the ACHETEUR role.");
         }
     }
 }

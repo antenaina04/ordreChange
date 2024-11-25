@@ -4,7 +4,6 @@ using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
 using ordreChange.Repositories.Interfaces;
 using OrdreChange.Dtos;
-using ordreChange.DTOs;
 using ordreChange.Services.Interfaces.IRoleServices;
 using ordreChange.Strategies.Roles;
 using AutoMapper;
@@ -43,14 +42,14 @@ namespace ordreChange.Services.Implementations
             _roleStrategyContext.RegisterStrategy("Acheteur", new AcheteurStrategy());
             _roleStrategyContext.RegisterStrategy("Validateur", new ValidateurStrategy());
         }
-        public async Task<OrdreDto?> GetOrdreDtoByIdAsync(int id)
+        public async Task<OrdreDto?> GetOrdreDtoByIdAsync(int ordreId)
         {
-            Logger.Info("Fetching order with ID {OrdreId}", id);
-            var ordre = await _unitOfWork.Ordres.GetOrdreByIdAsync(id);
+            Logger.Info("Fetching order with ID {OrdreId}", ordreId);
+            var ordre = await _unitOfWork.Ordres.GetOrdreByIdAsync(ordreId);
             if (ordre == null)
             {
-                Logger.Warn("Order with ID {OrdreId} not found", id);
-                return null;
+                Logger.Warn("Order with ID {OrdreId} not found", ordreId);
+                throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
             }
             // AUTO_MAPPER
             return _mapper.Map<OrdreDto>(ordre);
@@ -68,14 +67,6 @@ namespace ordreChange.Services.Implementations
                 agent => _acheteurService.ModifierOrdreAsync(ordreId, agentId, dto)
             );
         }
-        /*
-        public async Task<bool> ValiderOrdreAsync(int ordreId, int agentId)
-        {
-            return await _validateurService.ValidateAndExecuteAsync<bool>(agentId, ordreId, "Validation",
-                agent => _validateurService.ValiderOrdreAsync(ordreId, agentId)
-            );
-        }
-        */
         public async Task<object> GetOrdreStatutCountsAsync(int agentId)
         {
             return await _validateurService.ValidateAndExecuteAsync<Dictionary<string, int>>(agentId, null, "Stats",
@@ -95,14 +86,14 @@ namespace ordreChange.Services.Implementations
             if (ordre == null)
             {
                 Logger.Error("Order with ID {OrdreId} not found", ordreId);
-                throw new InvalidOperationException("L'ordre spécifié est introuvable.");
+                throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
             }
 
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
             {
                 Logger.Error("Agent with ID {AgentId} not found", agentId);
-                throw new InvalidOperationException("Agent introuvable.");
+                throw new UnauthorizedAccessException("No agent found to perform this action");
             }
 
             string action = newStatut switch
@@ -110,7 +101,7 @@ namespace ordreChange.Services.Implementations
                 "A modifier" => "Refus",
                 "Annulé" => "Annulation",
                 "Validé" => "Validation",
-                _ => throw new InvalidOperationException($"Statut '{newStatut}' non pris en charge.")
+                _ => throw new ArgumentException($"Status {newStatut} not supported.")
             };
 
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
@@ -143,7 +134,7 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
             {
                 Logger.Error("Agent with ID {AgentId} not found", agentId);
-                throw new InvalidOperationException("Agent introuvable.");
+                throw new UnauthorizedAccessException("No agent found to access on the history");
             }
 
             // Récupérer l'ordre et ses historiques depuis le repository
@@ -151,7 +142,7 @@ namespace ordreChange.Services.Implementations
             if (ordre == null)
             {
                 Logger.Error("Order with ID {OrdreId} not found", ordreId);
-                throw new InvalidOperationException("Ordre introuvable.");
+                throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
             }
 
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, "History");

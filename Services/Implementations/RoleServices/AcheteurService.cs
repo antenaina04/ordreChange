@@ -44,7 +44,7 @@ namespace ordreChange.Services.Implementations.RoleServices
             if (agent == null)
             {
                 Logger.Error("Agent with ID {AgentId} not found", agentId);
-                throw new KeyNotFoundException("L'agent spécifié est introuvable.");
+                throw new UnauthorizedAccessException("No agent found to create Order");
             }
 
             if (montant <= 0)
@@ -89,14 +89,14 @@ namespace ordreChange.Services.Implementations.RoleServices
 
             if (ordreExistant == null) {
                 Logger.Error("Order with ID {OrdreId} not found", ordreId);
-                throw new KeyNotFoundException("L'ordre a modifier est introuvable.");
+                throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
             }
 
             var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
             if (agent == null)
             {
                 Logger.Error("Agent with ID {AgentId} not found", agentId);
-                throw new KeyNotFoundException("L'agent spécifié est introuvable.");
+                throw new KeyNotFoundException("The specified agent cannot be found.");
             }
 
             double montantConverti = await _currencyExchangeService.CurrencyConversion(dto.Montant, dto.Devise, dto.DeviseCible);

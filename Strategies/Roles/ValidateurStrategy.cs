@@ -9,14 +9,14 @@ namespace ordreChange.Strategies.Roles
             if (action == "Validation")
             {
                 if (ordre == null || ordre.Statut != "En attente")
-                    throw new InvalidOperationException("Seuls les ordres en attente peuvent être validés.");
+                    throw new UnauthorizedAccessException("Only pending orders can be validated.");
                 return Task.CompletedTask;
             }
 
             if (action == "Refus")
             {
                 if (ordre == null || ordre.Statut != "En attente")
-                    throw new InvalidOperationException("Seuls les ordres en attente peuvent être refusés.");
+                    throw new UnauthorizedAccessException("Only pending orders can be refused.");
                 return Task.CompletedTask;
             }
             if (action == "Stats" || action == "History" || action == "Statut")
@@ -24,7 +24,7 @@ namespace ordreChange.Strategies.Roles
                 return Task.CompletedTask;
             }
 
-            throw new InvalidOperationException($"Action '{action}' non autorisée pour le rôle Validateur.");
+            throw new UnauthorizedAccessException($"Action {action} not allowed for the VALIDATEUR role.");
         }
     }
 }

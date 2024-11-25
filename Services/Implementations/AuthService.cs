@@ -25,36 +25,46 @@ namespace ordreChange.Services.Implementations
 
         public async Task<string?> AuthenticateAsync(string username, string password)
         {
-            Logger.Info("Tentative d'authentification pour l'utilisateur : {Username}", username);
+            Logger.Info("Authentication attempt for user: {Username}", username);
             try
             {
                 var agent = await _agentRepository.GetByUsernameAsync(username);
-                /*
-                // Utilisation PWD déjà crypté dans la base de données
-                if (agent == null || !VerifyPasswordHash(password, agent.PasswordHash))
-                    return null;    
-                */
-                if (agent == null)
-                    return null;
 
-                // DEVELOPMENT/TEST mode
+                if (agent == null)
+                {
+                    Logger.Warn("Agent {Username} not found.", username);
+                    throw new KeyNotFoundException($"User '{username}' not found.");
+                }
+
+                // Si mot de passe dans la base de données n'est pas hashé 
                 if (password == agent.PasswordHash)
                 {
-                    Logger.Info("Authentification réussie pour l'utilisateur {Username}.", username);
+                    Logger.Info("User {Username} authentication successful.", username);
                     return GenerateJwtToken(agent);
                 }
-                /*
-                // PRODUCTION mode
+
+                // Vérification si le mot de passe enregistré dans la base de données est déjà hashé
                 if (!VerifyPasswordHash(password, agent.PasswordHash))
                 {
-                    Logger.Warn("Échec de la vérification du mot de passe pour l'utilisateur {Username}.", username);
-                    return null;
-                }*/
+                    Logger.Warn("Password verification failed for user {Username}.", username);
+                    throw new UnauthorizedAccessException("Wrong password");
+                }
+                Logger.Info("User {Username} authentication successful.", username);
                 return GenerateJwtToken(agent);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                Logger.Warn(ex, "Authentication failure for user {Username} : {Message}", username, ex.Message);
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Logger.Warn(ex, "Authentication failure for user {Username} : {Message}", username, ex.Message);
+                throw;
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Erreur lors de l'authentification pour l'utilisateur {Username}.", username);
+                Logger.Error(ex, "Authentication failure for user {Username}", username);
                 throw; // Relancer l'exception pour la gestion en amont
             }
         }
@@ -72,7 +82,7 @@ namespace ordreChange.Services.Implementations
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Erreur lors de la vérification du hachage du mot de passe.");
+                Logger.Error(ex, "Error verifying password hash.");
                 throw;
             }
         }
@@ -87,15 +97,15 @@ namespace ordreChange.Services.Implementations
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Erreur lors du hachage du mot de passe.");
-                throw;
+                Logger.Error(ex, "An error has occurred while hashing the password.");
+                throw new InvalidOperationException("An error has occurred while hashing the password.", ex);
             }
         }
         private string GenerateJwtToken(Agent agent)
         {
             try
             {
-
+                Logger.Info("JWT token generation for user {AgentId}.", agent.IdAgent);
                 var jwtSettings = _configuration.GetSection("JwtSettings");
                 string secureKey = jwtSettings["Secret"] ?? SecurityHelper.GenerateSecureKey(32);
                 var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secureKey));
@@ -103,7 +113,8 @@ namespace ordreChange.Services.Implementations
 
                 if (agent.Role == null)
                 {
-                    throw new InvalidOperationException("Le rôle de l'agent n'est pas chargé.");
+                    Logger.Warn("Agent role {AgentId} is not loaded.", agent.IdAgent);
+                    throw new InvalidOperationException("The agent's role is not loaded.");
                 }
 
                 var claims = new[]
@@ -125,12 +136,18 @@ namespace ordreChange.Services.Implementations
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var token = tokenHandler.CreateToken(tokenDescriptor);
 
+                Logger.Info("JWT token successfully generated for user {AgentId}.", agent.IdAgent);
                 return tokenHandler.WriteToken(token);
+            }
+            catch (InvalidOperationException ex)
+            {
+                Logger.Error(ex, "Error generating JWT token: {Message}.", ex.Message);
+                throw;
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Erreur lors de la génération du token JWT pour l'utilisateur {AgentId}.", agent.IdAgent);
-                throw;
+                Logger.Error(ex, "Error generating JWT token for user {AgentId}.", agent.IdAgent);
+                throw new InvalidOperationException("Error generating JWT token.", ex);
             }
         }
     }

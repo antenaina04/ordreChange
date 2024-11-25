@@ -55,7 +55,7 @@ namespace ordreChange.Services.Implementations
             if (agent == null)
             {
                 Logger.Error("Agent with ID {AgentId} not found", agentId);
-                throw new InvalidOperationException("Agent introuvable.");
+                throw new UnauthorizedAccessException("No agent found to perform this action");
             }
 
             Ordre? ordre = null;
@@ -65,14 +65,14 @@ namespace ordreChange.Services.Implementations
                 if (ordre == null)
                 {
                     Logger.Error("Order with ID {OrdreId} not found", ordreId.Value);
-                    throw new InvalidOperationException($"Ordre avec ID {ordreId.Value} introuvable.");
+                    throw new KeyNotFoundException($"Order with ID = '{ordreId.Value}' not found.");
                 }
             }
 
             await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
-            
+
             Logger.Info("Action {Action} validated for agent {AgentId} and order {OrdreId}", action, agentId, ordreId);
-            
+
             return await execute(agent);
         }
     }
