@@ -26,8 +26,9 @@ namespace ordreChange.Strategies.Roles
         }
 
         /// <summary>
-        /// Vérifie si un agent a le droit d'exécuter une action sur une entité en fonction de son rôle
+        /// check si un agent peut exécuter une action sur une entité by his role
         /// </summary>
+        # region Check user permission
         public async Task CanExecuteAsync<TEntity>(Agent agent, TEntity? entity, string action)
          where TEntity : class
         {
@@ -39,6 +40,6 @@ namespace ordreChange.Strategies.Roles
             await strategy.ValidateActionAsync((dynamic)entity, agent.IdAgent, action);
           
         }
-
+        #endregion
     }
 }

@@ -21,6 +21,7 @@ namespace ordreChange.Services.Implementations
         /// <summary>
         /// Check permissions
         /// </summary>
+        # region Ability GETWAY
         public async Task<Agent> ValidateAgentAndPermissionAsync<TEntity>(int agentId, TEntity? entity, string action)
             where TEntity : class
         {
@@ -34,5 +35,6 @@ namespace ordreChange.Services.Implementations
             await _roleStrategyContext.CanExecuteAsync(agent, entity, action);
             return agent;
         }
+        #endregion
     }
 }

@@ -4,80 +4,72 @@ using System.Threading.Tasks;
 
 namespace ordreChange.Strategies.Roles
 {
+    
+    #region Acheteur Ordre
     public class OrdreAcheteurStrategy : IRoleStrategy<Ordre>
     {
         public async Task ValidateActionAsync(Ordre? ordre, int agentId, string action)
         {
-            if (action == "Création")
+            switch (action)
             {
-                await Task.CompletedTask;
-                return; 
+                case "Création":
+                    await Task.CompletedTask;
+                    return;
 
+                case "Modification":
+                case "Annulation":
+                    if (ordre.IdAgent != agentId)
+                        throw new UnauthorizedAccessException("Only the creator of this order is authorized to modify it.");
+                    if (ordre.Statut == "Annulé")
+                        throw new UnauthorizedAccessException("Order already canceled, modification or cancellation not authorized.");
+                    if (ordre.Statut == "Validé")
+                        throw new UnauthorizedAccessException("Order already validated, modification or cancellation not authorized.");
+
+                    await Task.CompletedTask;
+                    return;
+
+                case "History":
+                case "GET_ORDRE":
+                    if (ordre == null || ordre.IdAgent != agentId)
+                        throw new UnauthorizedAccessException("Only the creator of this order is authorized to access this history.");
+
+                    await Task.CompletedTask;
+                    return;
+
+                default:
+                    throw new UnauthorizedAccessException($"Action '{action}' not allowed for the ACHETEUR role.");
             }
-
-            if (action == "Modification" || action == "Annulation")
-            {
-                if (ordre == null || ordre.IdAgent != agentId)
-                    throw new UnauthorizedAccessException("Only the creator of this order is authorized to modify it.");
-                if (ordre.Statut == "Annulé")
-                    throw new UnauthorizedAccessException("Order already canceled, modification or cancellation not authorized.");
-                if (ordre.Statut == "Validé")
-                    throw new UnauthorizedAccessException("Order already validated, modification or cancellation not authorized.");
-                await Task.CompletedTask;
-                return; 
-
-            }
-
-            if (action == "History")
-            {
-                if (ordre == null || ordre.IdAgent != agentId)
-                    throw new UnauthorizedAccessException("Only the creator of this order is authorized to access this history.");
-                await Task.CompletedTask;
-                return; 
-
-            }
-
-            if (action == "GET_ORDRE")
-            {
-                if (ordre == null || ordre.IdAgent != agentId)
-                    throw new UnauthorizedAccessException("Only the creator of this order is authorized to access this history.");
-                await Task.CompletedTask;
-                return; 
-
-            }
-            throw new UnauthorizedAccessException($"Action '{action}' not allowed for the ACHETEUR role.");
         }
     }
+    #endregion
 
+    #region Validateur Ordre
     public class OrdreValidateurStrategy : IRoleStrategy<Ordre>
     {
         public async Task ValidateActionAsync(Ordre? ordre, int agentId, string action)
         {
-            if (action == "Validation")
+            switch (action)
             {
-                if (ordre == null || ordre.Statut != "En attente")
-                    throw new UnauthorizedAccessException("Only pending orders can be validated.");
-                await Task.CompletedTask;
-                return; 
+                case "Validation":
+                case "Refus":
+                    if (ordre.Statut != "En attente")
+                        throw new UnauthorizedAccessException($"Only pending orders can be {action.ToLower()}.");
 
+                    await Task.CompletedTask;
+                    return;
+
+                case "Stats":
+                case "History":
+                case "Statut":
+                case "GET_ORDRE":
+                    await Task.CompletedTask;
+                    return;
+
+                default:
+                    throw new UnauthorizedAccessException($"Action '{action}' not allowed for the VALIDATEUR role.");
             }
-
-            if (action == "Refus")
-            {
-                if (ordre == null || ordre.Statut != "En attente")
-                    throw new UnauthorizedAccessException("Only pending orders can be refused.");
-                await Task.CompletedTask;
-                return; 
-
-            }
-            if (action == "Stats" || action == "History" || action == "Statut" || action == "GET_ORDRE")
-            {
-                await Task.CompletedTask;
-                return; 
-
-            }
-
-            throw new UnauthorizedAccessException($"Action {action} not allowed for the VALIDATEUR role.");
         }
     }
+    #endregion
+    
 }
