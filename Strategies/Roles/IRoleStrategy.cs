@@ -2,8 +2,9 @@
 
 namespace ordreChange.Strategies.Roles
 {
-    public interface IRoleStrategy
+    public interface IRoleStrategy<TEntity>
+     where TEntity : class
     {
-        Task ValidateActionAsync(Ordre? ordre, int agentId, string action);
+        Task ValidateActionAsync(TEntity entity, int agentId, string action);
     }
 }

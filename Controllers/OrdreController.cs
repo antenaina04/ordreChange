@@ -51,16 +51,19 @@ namespace ordreChange.Controllers
         public async Task<IActionResult> GetOrdre(int id)
         {
             Logger.Info("Fetching order with ID {OrdreId}", id);
-            // Utilisation du service pour obtenir le DTO mappé
-            var ordreDto = await _ordreService.GetOrdreDtoByIdAsync(id);
+
+            var agentId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
+
+            var ordreDto = await _ordreService.GetOrdreDtoByIdAsync(agentId, id);
 
             if (ordreDto == null)
             {
                 Logger.Warn("Order with ID {OrdreId} not found", id);
-                return NotFound(); // Retourne 404 si l'ordre n'existe pas
+                return NotFound(); // Retourne 404 si not exist ordre
             }
             Logger.Info("Order with ID {OrdreId} fetched successfully", id);
-            return Ok(ordreDto); // Retourne directement le DTO mappé
+            return Ok(ordreDto); 
         }
 
         [HttpPost("{id}/annuler")]

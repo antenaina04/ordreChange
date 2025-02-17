@@ -8,13 +8,12 @@ using NLog;
 using NLog.Web;
 using ordreChange.Data;
 using ordreChange.Mappings;
+using ordreChange.Models;
 using ordreChange.Repositories.Implementations;
 using ordreChange.Repositories.Interfaces;
 using ordreChange.Services.Helpers;
 using ordreChange.Services.Implementations;
-using ordreChange.Services.Implementations.RoleServices;
 using ordreChange.Services.Interfaces;
-using ordreChange.Services.Interfaces.IRoleServices;
 using ordreChange.Strategies.Roles;
 using ordreChange.UnitOfWork;
 using ordreChange.Utilities;
@@ -56,13 +55,11 @@ try
             IssuerSigningKey = new SymmetricSecurityKey(secretKey)
         };
 
-        // Empêcher JwtBearer de gérer automatiquement les exceptions
+        // Avoid JwtBearer de gérer automatiquement les exceptions
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
             {
-                // Log the exception or handle it as needed
-                //context.NoResult(); // Empêche la gestion automatique des erreurs
                 context.Response.Headers.Append("Authentication-Failed", "true");
                 context.Fail(context.Exception);
                 return Task.CompletedTask;
@@ -88,45 +85,29 @@ try
     builder.Services.AddDbContext<OrdreDeChangeContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-    // AutoMapper Dependency Injection
     builder.Services.AddAutoMapper(typeof(ordreChange.Mappings.AutoMapperProfile));
 
     // Configuration du CurrencyExchangeService
     builder.Services.AddHttpClient<CurrencyExchangeService>();
     builder.Services.AddScoped<CurrencyExchangeService>();
 
-    /// <summary>
-    /// Configures the dependency injection container to use the RoleStrategyContext
-    /// and registers role-based strategies for handling role-specific logic.
-    /// </summary>
     builder.Services.AddScoped<RoleStrategyContext>(provider =>
     {
-        // Create an instance of RoleStrategyContext
         var context = new RoleStrategyContext();
 
-        /// <summary>
-        /// Registers strategies for handling logic based on specific roles.
-        /// Each strategy encapsulates the logic for a single role, allowing dynamic
-        /// selection of behavior based on the user's role.
-        /// </summary>
-        /// <remarks>
-        /// - "Acheteur" is registered with <see cref="AcheteurStrategy"/> to handle buyer-specific logic.
-        /// - "Validateur" is registered with <see cref="ValidateurStrategy"/> to handle validator-specific logic.
-        /// </remarks>
-        context.RegisterStrategy("Acheteur", new AcheteurStrategy());
-        context.RegisterStrategy("Validateur", new ValidateurStrategy());
+        context.RegisterStrategy<Ordre>("Acheteur", new OrdreAcheteurStrategy());
+        context.RegisterStrategy<Ordre>("Validateur", new OrdreValidateurStrategy());
 
-        // Return the fully configured context to the DI container
+
+        // Return RoleStrategy config DI
         return context;
     });
-
-    builder.Services.AddScoped<IRoleStrategy, AcheteurStrategy>();
-    builder.Services.AddScoped<IRoleStrategy, ValidateurStrategy>();
+    // Enregistrement stratégies
+    builder.Services.AddScoped<IRoleStrategy<Ordre>, OrdreAcheteurStrategy>();
+    builder.Services.AddScoped<IRoleStrategy<Ordre>, OrdreValidateurStrategy>();
 
     // Dependency Injection
     builder.Services.AddScoped<IAgentRepository, AgentRepository>();
-    builder.Services.AddScoped<IAcheteurService, AcheteurService>();
-    builder.Services.AddScoped<IValidateurService, ValidateurService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
     builder.Services.AddScoped<IOrdreService, OrdreService>();
@@ -137,7 +118,6 @@ try
     // Add Controllers and Swagger
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
-    //builder.Services.AddSwaggerGen(); // OLD_SWAGGER Conf.
     // Conf. JWT into SWAGGER
     builder.Services.AddSwaggerGen(c =>
     {
@@ -183,21 +163,18 @@ try
 
     var app = builder.Build();
 
-    // Enregistrement du middleware global pour les exceptions
-
-    // Configure the HTTP request pipeline.
+    // HTTP request pipeline
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        //app.UseSwaggerUI(); // OLD_SWAGGER Conf.
         app.UseSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ordre de Change API V1");
             c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
-            c.DefaultModelsExpandDepth(-1); // Cache les modèles par défaut
+            c.DefaultModelsExpandDepth(-1);
         });
     }
-    app.UseMiddleware<ordreChange.Middlewares.ExceptionMiddleware>(); // Injection de dépendance pour la centralisation des exceptions
+    app.UseMiddleware<ordreChange.Middlewares.ExceptionMiddleware>(); //  centralisation exceptions
 
     logger.Info("Application successfully launched");
 

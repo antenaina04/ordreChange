@@ -4,7 +4,6 @@ using ordreChange.Services.Interfaces;
 using ordreChange.UnitOfWork;
 using ordreChange.Repositories.Interfaces;
 using OrdreChange.Dtos;
-using ordreChange.Services.Interfaces.IRoleServices;
 using ordreChange.Strategies.Roles;
 using AutoMapper;
 using NLog;
@@ -15,8 +14,6 @@ namespace ordreChange.Services.Implementations
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly CurrencyExchangeService _currencyExchangeService;
-        private readonly IAcheteurService _acheteurService;
-        private readonly IValidateurService _validateurService;
         private readonly RoleStrategyContext _roleStrategyContext;
         private readonly IAgentRepository _agentRepository;
         private readonly IMapper _mapper;
@@ -24,8 +21,6 @@ namespace ordreChange.Services.Implementations
 
         public OrdreService(
             IUnitOfWork unitOfWork,
-            IAcheteurService acheteurService,
-            IValidateurService validateurService,
             CurrencyExchangeService currencyExchangeService,
             RoleStrategyContext roleStrategyContext,
             IAgentRepository agentRepository,
@@ -33,52 +28,165 @@ namespace ordreChange.Services.Implementations
         {
             _unitOfWork = unitOfWork;
             _currencyExchangeService = currencyExchangeService;
-            _acheteurService = acheteurService;
-            _validateurService = validateurService;
             _roleStrategyContext = new RoleStrategyContext();
             _agentRepository = agentRepository;
             _mapper = mapper;
 
-            _roleStrategyContext.RegisterStrategy("Acheteur", new AcheteurStrategy());
-            _roleStrategyContext.RegisterStrategy("Validateur", new ValidateurStrategy());
+            _roleStrategyContext.RegisterStrategy("Acheteur", new OrdreAcheteurStrategy());
+            _roleStrategyContext.RegisterStrategy("Validateur", new OrdreValidateurStrategy());
         }
-        public async Task<OrdreDto?> GetOrdreDtoByIdAsync(int ordreId)
+        public async Task<OrdreDto?> GetOrdreDtoByIdAsync(int agentId, int ordreId)
         {
             Logger.Info("Fetching order with ID {OrdreId}", ordreId);
+            var agent = await _agentRepository.GetByIdAsync(agentId);
+            if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new UnauthorizedAccessException("No agent found to create Order");
+            }
             var ordre = await _unitOfWork.Ordres.GetOrdreByIdAsync(ordreId);
             if (ordre == null)
             {
                 Logger.Warn("Order with ID {OrdreId} not found", ordreId);
                 throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
             }
+            await _roleStrategyContext.CanExecuteAsync(agent, ordre, "GET_ORDRE");
+
             // AUTO_MAPPER
             return _mapper.Map<OrdreDto>(ordre);
         }
         public async Task<OrdreResponseDto> CreerOrdreAsync(int agentId, string typeTransaction, float montant, string devise, string deviseCible)
         {
-            return await _acheteurService.ValidateAndExecuteAsync<OrdreResponseDto>(agentId, null, "Création",
-                agent => _acheteurService.CreerOrdreAsync(agentId, typeTransaction, montant, devise, deviseCible)
-            );
+            Logger.Info("Creating order for agent {AgentId} with amount {Montant} {Devise} to {DeviseCible}", agentId, montant, devise, deviseCible);
+            var agent = await _agentRepository.GetByIdAsync(agentId);
+            if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new UnauthorizedAccessException("No agent found to create Order");
+            }
+            await _roleStrategyContext.CanExecuteAsync<object>(agent, null, "Création");
+
+            if (montant <= 0)
+            {
+                Logger.Warn("Invalid amount {Montant} specified for agent {AgentId}", montant, agentId);
+                throw new ArgumentException("Le montant doit être supérieur à 0.");
+            }
+
+            double montantConverti = await _currencyExchangeService.CurrencyConversion(montant, devise, deviseCible);
+
+            var ordre = new Ordre
+            {
+                Montant = montant,
+                Devise = devise,
+                DeviseCible = deviseCible,
+                Statut = "En attente",
+                TypeTransaction = typeTransaction,
+                DateCreation = DateTime.UtcNow,
+                MontantConverti = (float)montantConverti,
+                Agent = agent
+            };
+            await _unitOfWork.Ordres.AddAsync(ordre);
+
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = ordre.Statut,
+                Action = "Création",
+                Montant = ordre.MontantConverti,
+                Ordre = ordre
+            };
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+
+            await _unitOfWork.CompleteAsync();
+            Logger.Info("Order created successfully for agent {AgentId}", agentId);
+            return _mapper.Map<OrdreResponseDto>(ordre);
         }
 
         public async Task<bool> ModifierOrdreAsync(int ordreId, int agentId, ModifierOrdreDto dto)
         {
-            return await _acheteurService.ValidateAndExecuteAsync<bool>(agentId, ordreId, "Modification",
-                agent => _acheteurService.ModifierOrdreAsync(ordreId, agentId, dto)
-            );
+            var ordreExistant = await _unitOfWork.Ordres.GetByIdAsync(ordreId);
+
+            if (ordreExistant == null)
+            {
+                Logger.Error("Order with ID {OrdreId} not found", ordreId);
+                throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
+            }
+
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new KeyNotFoundException("The specified agent cannot be found.");
+            }
+            await _roleStrategyContext.CanExecuteAsync(agent, ordreExistant, "Modification");
+
+            double montantConverti = await _currencyExchangeService.CurrencyConversion(dto.Montant, dto.Devise, dto.DeviseCible);
+
+            // Appliquer les modifications
+            ordreExistant.Montant = dto.Montant;
+            ordreExistant.Devise = dto.Devise;
+            ordreExistant.Statut = "En attente";
+            ordreExistant.DeviseCible = dto.DeviseCible;
+            ordreExistant.TypeTransaction = dto.TypeTransaction;
+            ordreExistant.MontantConverti = (float)montantConverti;
+            ordreExistant.DateDerniereModification = DateTime.UtcNow;
+
+            _unitOfWork.Ordres.Update(ordreExistant);
+
+            var historique = new HistoriqueOrdre
+            {
+                Date = DateTime.UtcNow,
+                Statut = "En attente",
+                Action = "Modification",
+                Montant = ordreExistant.MontantConverti,
+                Ordre = ordreExistant
+            };
+            await _unitOfWork.HistoriqueOrdres.AddAsync(historique);
+
+            await _unitOfWork.CompleteAsync();
+            Logger.Info("Order {OrdreId} modified successfully for agent {AgentId}", ordreId, agentId);
+            return true;
         }
         public async Task<object> GetOrdreStatutCountsAsync(int agentId)
         {
-            return await _validateurService.ValidateAndExecuteAsync<Dictionary<string, int>>(agentId, null, "Stats",
-                agent => _validateurService.GetOrdreStatutCountsAsync()
-            );
+            Logger.Info("Fetching order status counts");
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new UnauthorizedAccessException("No agent found to perform this action");
+            }
+            var counts = await _unitOfWork.Ordres.GetStatutCountsAsync();
+
+            await _roleStrategyContext.CanExecuteAsync<object>(agent, null, "Stats");
+
+            return new Dictionary<string, int>
+            {
+                { "En attente", counts.GetValueOrDefault("En attente", 0) },
+                { "A modifier", counts.GetValueOrDefault("A modifier", 0) },
+                { "Annulé", counts.GetValueOrDefault("Annulé", 0) },
+                { "Validé", counts.GetValueOrDefault("Validé", 0) }
+            };
         }
         public async Task<List<OrdreDto>> GetOrdreDtoByStatutAsync(int agentId, string statut)
         {
-            return await _validateurService.ValidateAndExecuteAsync<List<OrdreDto>>(agentId, null, "Statut",
-                agent => _validateurService.GetOrdreDtoByStatutAsync(statut)
-            );
+            Logger.Info("Fetching orders with status {Statut}", statut);
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
+            if (agent == null)
+            {
+                Logger.Error("Agent with ID {AgentId} not found", agentId);
+                throw new UnauthorizedAccessException("No agent found to perform this action");
+            }
+            var ordres = await _unitOfWork.Ordres.GetOrdresByStatutAsync(statut);
+            if (ordres == null || ordres.Count == 0)
+            {
+                Logger.Warn("No orders found with status {Statut}", statut);
+                return new List<OrdreDto>();
+            }
+            await _roleStrategyContext.CanExecuteAsync<object>(agent, null, "Statut");
+            return _mapper.Map<List<OrdreDto>>(ordres);
         }
+
         public async Task<bool> UpdateStatusOrdreAsync(int ordreId, int agentId, string newStatut)
         {
             Logger.Info("Updating status of order {OrdreId} to {NewStatut} by agent {AgentId}", ordreId, newStatut, agentId);
@@ -104,7 +212,7 @@ namespace ordreChange.Services.Implementations
                 _ => throw new ArgumentException($"Status {newStatut} not supported.")
             };
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, action);
+            await _roleStrategyContext.CanExecuteAsync(agent, ordre, action);
 
             ordre.Statut = newStatut;
             ordre.DateDerniereModification = DateTime.UtcNow;
@@ -145,7 +253,7 @@ namespace ordreChange.Services.Implementations
                 throw new KeyNotFoundException($"Order with ID = '{ordreId}' not found.");
             }
 
-            await _roleStrategyContext.CanExecuteAsync(agent.Role.Name, ordre, agentId, "History");
+            await _roleStrategyContext.CanExecuteAsync(agent, ordre, "History");
 
             // AUTO_MAPPER
             return _mapper.Map<HistoriqueDto>(ordre);
