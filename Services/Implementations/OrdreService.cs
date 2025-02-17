@@ -67,6 +67,8 @@ namespace ordreChange.Services.Implementations
             }
 
             double montantConverti = await _currencyExchangeService.CurrencyConversion(montant, devise, deviseCible);
+            
+            var agent = await _unitOfWork.Agents.GetByIdAsync(agentId);
 
             var ordre = new Ordre
             {
