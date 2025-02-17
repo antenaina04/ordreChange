@@ -109,6 +109,7 @@ try
     // Dependency Injection
     builder.Services.AddScoped<IAgentRepository, AgentRepository>();
     builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IAbilityRoleService, AbilityRoleService>();
     builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
     builder.Services.AddScoped<IOrdreService, OrdreService>();
 

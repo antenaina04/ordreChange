@@ -16,7 +16,7 @@ namespace ordreChange.Services.Implementations
         private readonly CurrencyExchangeService _currencyExchangeService;
         private readonly RoleStrategyContext _roleStrategyContext;
         private readonly IAgentRepository _agentRepository;
-        private readonly AbilityRoleService _abilityRoleService;
+        private readonly IAbilityRoleService _abilityRoleService;
         private readonly IMapper _mapper;
         private static readonly NLog.ILogger Logger = LogManager.GetCurrentClassLogger();
 
@@ -26,7 +26,7 @@ namespace ordreChange.Services.Implementations
             RoleStrategyContext roleStrategyContext,
             IAgentRepository agentRepository,
             IMapper mapper,
-            AbilityRoleService abilityRoleService)
+            IAbilityRoleService abilityRoleService)
         {
             _unitOfWork = unitOfWork;
             _currencyExchangeService = currencyExchangeService;

@@ -1,11 +1,12 @@
 ﻿using NLog;
 using ordreChange.Models;
 using ordreChange.Repositories.Interfaces;
+using ordreChange.Services.Interfaces;
 using ordreChange.Strategies.Roles;
 
 namespace ordreChange.Services.Implementations
 {
-    public class AbilityRoleService
+    public class AbilityRoleService : IAbilityRoleService
     {
         private readonly IAgentRepository _agentRepository;
         private readonly RoleStrategyContext _roleStrategyContext;
