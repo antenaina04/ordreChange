@@ -28,7 +28,7 @@ namespace ordreChange.Strategies.Roles
         /// <summary>
         /// check si un agent peut exécuter une action sur une entité by his role
         /// </summary>
-        # region Check user permission
+        # region Call RoleStrategy
         public async Task CanExecuteAsync<TEntity>(Agent agent, TEntity? entity, string action)
          where TEntity : class
         {
